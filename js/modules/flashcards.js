@@ -48,12 +48,12 @@ export function createFlashcardController({ root, onRefresh, onStatus }) {
     message.textContent = session.lastMessage;
   }
 
-  async function startStudy(setId = null) {
+  async function startStudy(setId = null, { dueOnly = true } = {}) {
     try {
       const sets = await getFlashcardSets();
       const selectedSet = setId ? sets.find((set) => set.id === setId) : null;
       const deck = setId
-        ? await getStudyCards(setId)
+        ? await getStudyCards(setId, { dueOnly })
         : (await Promise.all(sets.filter((set) => set.dueCount > 0).map((set) => getStudyCards(set.id)))).flat();
       if (!mounted) return;
       if (deck.length === 0) {
@@ -62,6 +62,7 @@ export function createFlashcardController({ root, onRefresh, onStatus }) {
       }
       session = {
         setId,
+        dueOnly,
         setName: selectedSet?.name ?? "All due cards",
         cards: deck,
         position: 0,
@@ -130,13 +131,14 @@ export function createFlashcardController({ root, onRefresh, onStatus }) {
   async function restartStudy() {
     if (!session) return;
     const setId = session.setId;
+    const dueOnly = session.dueOnly;
     const setName = session.setName;
     try {
       const fresh = setId
-        ? await getStudyCards(setId)
+        ? await getStudyCards(setId, { dueOnly })
         : (await Promise.all((await getFlashcardSets()).filter((set) => set.dueCount > 0).map((set) => getStudyCards(set.id)))).flat();
       if (!mounted) return;
-      session = { setId, setName, cards: fresh, position: 0, reviewed: 0, flipped: false, lastMessage: "Remaining due cards reloaded." };
+      session = { setId, dueOnly, setName, cards: fresh, position: 0, reviewed: 0, flipped: false, lastMessage: "Remaining cards reloaded." };
       renderCard();
     } catch (error) {
       if (!mounted) return;
@@ -148,6 +150,7 @@ export function createFlashcardController({ root, onRefresh, onStatus }) {
   async function handleClick(button) {
     if (button.id === "study-due-all") await startStudy();
     else if (button.dataset.action === "study-set-due") await startStudy(button.dataset.id);
+    else if (button.dataset.action === "study-set-all") await startStudy(button.dataset.id, { dueOnly: false });
     else if (button.id === "study-close") {
       session = null;
       byId("flashcard-study").hidden = true;

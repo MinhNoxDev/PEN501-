@@ -22,15 +22,15 @@
   display: flex;
   gap: 2px;
   margin-top: var(--space-4);
-  border-bottom: var(--border-heavy) solid var(--border-color);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .vocabulary-nav__tab {
   min-width: 150px;
   min-height: 48px;
-  border: var(--border-thick) solid var(--border-color);
-  border-bottom: 0;
-  background: var(--surface-base);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
   color: var(--text-primary);
   padding: 10px 18px;
   font-family: var(--font-mono);
@@ -43,8 +43,8 @@
 }
 
 .vocabulary-nav__tab[aria-selected="true"] {
-  background: var(--surface-inverted);
-  color: var(--text-inverted);
+  border-bottom-color: var(--color-red);
+  color: var(--color-red);
 }
 
 .vocabulary-nav__tab:focus-visible {
@@ -70,7 +70,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  border: var(--border-thick) solid var(--border-color);
+  border: 2px solid var(--border-subtle);
   padding: var(--space-3);
 }
 
@@ -102,10 +102,30 @@
 
 .vocabulary-tools {
   display: grid;
-  grid-template-columns: minmax(240px, 1.5fr) minmax(190px, 0.8fr) minmax(190px, 0.8fr);
+  grid-template-columns: 52px minmax(220px, 1.1fr) minmax(190px, 0.8fr);
   gap: var(--space-3);
-  border-width: var(--border-thick);
+  align-items: end;
+  border-width: 2px;
 }
+
+.search-trigger,
+.icon-button {
+  display: inline-grid;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 2px solid var(--color-black);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.search-trigger svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; }
+.search-trigger:hover,
+.icon-button:hover { border-color: var(--color-red); background: var(--color-red); color: var(--color-white); }
+.search-trigger[data-active="true"] { border-bottom: 3px solid var(--color-red); }
+.icon-button { width: 44px; min-width: 44px; height: 44px; font-family: var(--font-body); font-size: 1.75rem; line-height: 1; }
 
 .vocabulary-tools label,
 .form-field > label {
@@ -168,14 +188,12 @@
 
 .vocabulary-toolbar__actions { justify-content: flex-end; }
 
-.button--destructive {
-  background: var(--color-error);
-  color: var(--color-white);
-}
+.button--destructive { border-color: var(--color-red); background: transparent; color: var(--color-red); }
 
 .button--destructive:hover {
-  background: var(--surface-inverted);
-  color: var(--color-error);
+  border-color: var(--color-red);
+  background: var(--color-red);
+  color: var(--color-white);
 }
 
 .button--small {
@@ -221,14 +239,14 @@
 .vocabulary-table-wrap {
   width: 100%;
   overflow-x: auto;
-  border-top: var(--border-heavy) solid var(--border-color);
+  border-top: 2px solid var(--border-color);
 }
 
 .vocabulary-table { width: 100%; border-collapse: collapse; text-align: left; }
 
 .vocabulary-table th,
 .vocabulary-table td {
-  border-bottom: var(--border-thick) solid var(--border-color);
+  border-bottom: 1px solid var(--border-subtle);
   padding: 14px 12px;
   vertical-align: middle;
 }
@@ -295,7 +313,7 @@
   display: grid;
   justify-items: center;
   gap: var(--space-3);
-  border-block: var(--border-thick) solid var(--border-color);
+  border-block: 1px solid var(--border-subtle);
   padding: var(--space-5) var(--space-3);
   text-align: center;
 }
@@ -322,12 +340,29 @@
 .flashcard-sets-count { opacity: 0.72; }
 .flashcard-set-list { border-top: var(--border-thick) solid var(--border-color); }
 
+.flashcard-library__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-bottom: 2px solid var(--border-subtle);
+  padding-bottom: var(--space-3);
+}
+
+.flashcard-library__header h3 { margin-top: var(--space-1); }
+.flashcard-library__header p:last-child { margin-top: var(--space-2); color: var(--text-secondary); font-size: 0.875rem; }
+.flashcard-library__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.flashcard-library__actions .button { gap: var(--space-2); }
+.flashcard-library__actions svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; }
+.flashcard-stats { margin-top: var(--space-3); }
+.flashcard-set-list { border-top: 2px solid var(--border-subtle); }
+
 .flashcard-set-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  border-bottom: var(--border-thick) solid var(--border-color);
+  border-bottom: var(--border-thin) solid var(--border-subtle);
   padding: var(--space-3) 0;
 }
 
@@ -341,7 +376,7 @@
 }
 
 .vocabulary-add-heading {
-  border-bottom: var(--border-thick) solid var(--border-color);
+  border-bottom: 2px solid var(--border-subtle);
   padding-bottom: var(--space-3);
 }
 
@@ -350,7 +385,7 @@
 
 .vocabulary-form {
   margin-top: var(--space-3);
-  border: var(--border-thick) solid var(--border-color);
+  border: 2px solid var(--border-subtle);
   padding: clamp(16px, 3vw, 32px);
 }
 
@@ -359,6 +394,7 @@
 .form-field .field-control { min-height: 48px; font-family: var(--font-body); font-size: 1rem; }
 .form-field textarea.field-control { min-height: 110px; resize: vertical; }
 .label-hint { font-family: var(--font-body); font-size: 0.6875rem; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.field-hint { margin-top: var(--space-1); color: var(--text-secondary); font-size: 0.8125rem; }
 
 .autosave-status,
 .flashcard-set-selection {
@@ -378,19 +414,46 @@
   width: min(760px, calc(100vw - 32px));
   max-height: min(90vh, 920px);
   overflow-y: auto;
-  border: var(--border-heavy) solid var(--border-color);
+  border: 2px solid var(--border-color);
   border-radius: 0;
   background: var(--surface-base);
   color: var(--text-primary);
   padding: var(--space-4);
 }
 
-.raw-dialog::backdrop { background: #000000; opacity: 0.72; }
+.raw-dialog::backdrop { background: rgb(10 10 10 / 58%); }
 .raw-dialog h2 { margin-bottom: var(--space-4); font-size: clamp(1.75rem, 4vw, 2.5rem); }
 .raw-dialog .form-field { margin-top: var(--space-3); }
 .raw-dialog .field-control { font-family: var(--font-body); font-size: 0.9375rem; }
 .dialog-actions { justify-content: flex-end; margin-top: var(--space-4); }
 .raw-dialog[open] { display: block; }
+
+.search-dialog { width: min(760px, calc(100vw - 32px)); }
+.search-dialog__header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); }
+.search-dialog__header h2 { margin: var(--space-1) 0 0; }
+.search-dialog > label,
+.flashcard-word-picker__heading label { display: block; margin-bottom: var(--space-1); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.search-dialog > .field-control { min-height: 52px; font-size: 1.125rem; }
+.search-dialog__footer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-top: var(--space-3); }
+.search-dialog__footer p { color: var(--text-secondary); font-size: 0.875rem; }
+
+.flashcard-create-dialog { width: min(760px, calc(100vw - 32px)); }
+.flashcard-create-dialog .search-dialog__header { margin-bottom: var(--space-3); }
+.flashcard-create-fields { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.flashcard-create-fields--single { grid-template-columns: 1fr; }
+.flashcard-create-fields .field-control { width: 100%; }
+.flashcard-word-picker__heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-top: var(--space-3); }
+.flashcard-word-picker__heading span { color: var(--text-secondary); font-size: 0.75rem; }
+.flashcard-word-search { width: 100%; margin-bottom: var(--space-2); }
+.flashcard-word-picker { max-height: min(38vh, 360px); overflow-y: auto; border: 2px solid var(--border-subtle); }
+.flashcard-word-option { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); border-bottom: 1px solid var(--border-subtle); padding: 10px 12px; cursor: pointer; }
+.flashcard-word-option:last-child { border-bottom: 0; }
+.flashcard-word-option:hover { background: var(--surface-muted); }
+.flashcard-word-option input { width: 18px; height: 18px; accent-color: var(--color-red); }
+.flashcard-word-option__details { display: grid; min-width: 0; gap: 2px; }
+.flashcard-word-option__details strong,
+.flashcard-word-option__details span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.flashcard-word-option__details span { color: var(--text-secondary); font-size: 0.8125rem; }
 
 .flashcard-study { width: min(100%, 1060px); margin: 0 auto; }
 .flashcard-study[hidden],
@@ -414,7 +477,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  border: var(--border-heavy) solid var(--border-color);
+  border: 2px solid var(--border-subtle);
   border-radius: 0;
   background: var(--surface-base);
   color: var(--text-primary);
@@ -422,7 +485,7 @@
   text-align: center;
 }
 
-.flashcard-face:hover { background: var(--surface-inverted); color: var(--text-inverted); }
+.flashcard-face:hover { border-color: var(--color-red); background: var(--surface-base); color: var(--text-primary); }
 .flashcard-face__label,
 .flashcard-face__hint { align-self: flex-start; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .flashcard-face__content { display: grid; width: 100%; min-width: 0; flex: 1; align-content: center; justify-items: center; gap: var(--space-3); margin-block: auto; }
@@ -430,12 +493,11 @@
 .flashcard-face__pos { font-family: var(--font-mono); }
 .flashcard-face__example { max-width: 680px; overflow-wrap: anywhere; border-top: 2px solid currentColor; padding-top: var(--space-2); font-family: var(--font-body); font-size: clamp(0.9375rem, 2vw, 1.125rem); line-height: 1.5; }
 .flashcard-controls { justify-content: center; margin-top: var(--space-3); }
-.flashcard-rating { justify-content: center; margin-top: var(--space-4); border-top: var(--border-heavy) solid var(--border-color); padding-top: var(--space-3); }
+.flashcard-rating { justify-content: center; margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3); }
 .study-message { min-height: 24px; margin-top: var(--space-2); font-family: var(--font-mono); font-size: 0.6875rem; text-align: center; }
 
 @media (max-width: 980px) {
-  .vocabulary-tools { grid-template-columns: minmax(0, 1fr) minmax(180px, 0.8fr); }
-  .vocabulary-tools__search { grid-column: 1 / -1; }
+  .vocabulary-tools { grid-template-columns: 52px minmax(0, 1fr) minmax(180px, 0.8fr); }
 }
 
 @media (max-width: 700px) {
@@ -448,8 +510,9 @@
   .vocabulary-stat strong { font-size: 1.75rem; }
   .vocabulary-study-cta { align-items: stretch; flex-direction: column; }
   .vocabulary-study-cta .button { width: 100%; }
-  .vocabulary-tools { grid-template-columns: 1fr; padding: var(--space-3); }
-  .vocabulary-tools__search { grid-column: auto; }
+  .vocabulary-tools { grid-template-columns: 48px minmax(0, 1fr); padding: var(--space-3); }
+  .vocabulary-tools__select { grid-column: 2; }
+  .search-trigger { grid-column: 1; grid-row: 1; align-self: end; }
   .vocabulary-toolbar { align-items: stretch; flex-direction: column; }
   .vocabulary-toolbar__selection { justify-content: space-between; }
   .vocabulary-toolbar__actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); justify-content: stretch; }
@@ -457,7 +520,7 @@
   .csv-file-label { width: 100%; justify-content: center; }
   .vocabulary-table-wrap { display: none; }
   .vocabulary-mobile-list { display: grid; gap: var(--space-2); }
-  .vocabulary-card { border: var(--border-heavy) solid var(--border-color); padding: var(--space-3); }
+  .vocabulary-card { border: 2px solid var(--border-subtle); padding: var(--space-3); }
   .vocabulary-card > header { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: var(--space-2); align-items: start; }
   .vocabulary-card > header h3 { grid-column: 2; font-size: 1.375rem; overflow-wrap: anywhere; }
   .vocabulary-card > header .part-of-speech-chip { grid-column: 2; justify-self: start; }
@@ -468,6 +531,14 @@
   .flashcard-set-row { align-items: flex-start; flex-direction: column; }
   .flashcard-set-row .row-actions { width: 100%; }
   .flashcard-set-row .button { flex: 1; }
+  .flashcard-library__header { align-items: stretch; flex-direction: column; }
+  .flashcard-library__actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .flashcard-library__actions .button { width: 100%; }
+  .flashcard-set-row .row-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .flashcard-create-fields { grid-template-columns: 1fr; }
+  .search-dialog { width: 100vw; max-width: none; height: 100dvh; max-height: none; margin: 0; border-width: 0; padding: var(--space-4) var(--space-3); }
+  .search-dialog__footer { align-items: stretch; flex-direction: column; }
+  .search-dialog__footer .button { width: 100%; }
   .vocabulary-form-grid { grid-template-columns: 1fr; }
   .form-field--wide { grid-column: auto; }
   .vocabulary-form-actions { align-items: stretch; flex-direction: column-reverse; }

@@ -51,9 +51,9 @@ PEN501/
 
 ## Design and architecture
 
-The interface follows `rawblock-DESIGN.md`: square geometry, strong black/white contrast, 3–5px borders, no shadows, high-impact Archivo Black headings, Work Sans body text, and Space Mono controls. Blue is reserved for links. If Google Fonts cannot load, local system font fallbacks keep the app usable.
+The interface follows `voicebox-DESIGN.md`: a light editorial canvas, sharp geometry, Archivo Black headlines, Work Sans body text, Space Mono utility labels, subtle structural borders, and a restrained red accent. If Google Fonts cannot load, local system font fallbacks keep the app usable.
 
-Navigation is hash-based, so it works on static hosting without server rewrite rules. Views are separate ES modules, while `app.js` wires shared behavior. Theme preference is stored in LocalStorage. Learning data uses `PEN501_DB` through the shared Storage Service; modules should not access IndexedDB directly.
+Navigation is hash-based, so it works on static hosting without server rewrite rules. The right-side navigation drawer can be opened or collapsed at desktop and mobile sizes. Views are separate ES modules, while `app.js` wires shared behavior. Light is the default theme; theme and motion preferences are stored in LocalStorage. Learning data uses `PEN501_DB` through the shared Storage Service; modules should not access IndexedDB directly.
 
 ## Technology and data plan
 

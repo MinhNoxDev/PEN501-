@@ -3,14 +3,24 @@ import { APP_CONFIG } from "./config.js";
 function readThemePreference() {
   try {
     const saved = localStorage.getItem(APP_CONFIG.themeStorageKey);
-    return ["system", "light", "dark"].includes(saved) ? saved : "system";
+    return ["system", "light", "dark"].includes(saved) ? saved : "light";
   } catch {
-    return "system";
+    return "light";
+  }
+}
+
+function readAnimationPreference() {
+  try {
+    const saved = localStorage.getItem(APP_CONFIG.animationStorageKey);
+    return saved === null ? true : saved !== "false";
+  } catch {
+    return true;
   }
 }
 
 export const appState = {
   theme: readThemePreference(),
+  animationsEnabled: readAnimationPreference(),
 };
 
 function updateBrowserThemeColor() {
@@ -18,7 +28,7 @@ function updateBrowserThemeColor() {
   if (!metaThemeColor) return;
   const usesDarkTheme = appState.theme === "dark" ||
     (appState.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-  metaThemeColor.content = usesDarkTheme ? "#000000" : "#ffffff";
+  metaThemeColor.content = usesDarkTheme ? "#0a0a0a" : "#fafafa";
 }
 
 export function setThemePreference(theme) {
@@ -34,8 +44,20 @@ export function setThemePreference(theme) {
   return true;
 }
 
+export function setAnimationPreference(enabled) {
+  appState.animationsEnabled = Boolean(enabled);
+  document.documentElement.dataset.animations = appState.animationsEnabled ? "on" : "off";
+  try {
+    localStorage.setItem(APP_CONFIG.animationStorageKey, String(appState.animationsEnabled));
+  } catch {
+    // The preference still applies to this page when browser storage is unavailable.
+  }
+  return true;
+}
+
 export function initializePreferences() {
   document.documentElement.dataset.theme = appState.theme;
+  document.documentElement.dataset.animations = appState.animationsEnabled ? "on" : "off";
   updateBrowserThemeColor();
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
     if (appState.theme === "system") updateBrowserThemeColor();

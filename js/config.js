@@ -2,6 +2,7 @@ export const APP_CONFIG = Object.freeze({
   name: "PEN501",
   version: "0.2.0",
   themeStorageKey: "pen501.theme",
+  animationStorageKey: "pen501.animations",
   defaultRoute: "dashboard",
 });
 

@@ -15,8 +15,16 @@ export function renderSettings() {
     <section class="status-view" aria-labelledby="settings-heading">
       <p class="eyebrow">Preferences / This browser</p>
       <h2 id="settings-heading">A workspace that feels right.</h2>
-      <p class="status-view__description">Choose System, Light, or Dark from the theme control in the header. Your choice is saved in this browser and takes effect immediately.</p>
+      <p class="status-view__description">Choose a theme and motion preference. Light is the default; your choices are saved in this browser and take effect immediately.</p>
       <div class="settings-grid">
+        <section class="settings-item" aria-labelledby="settings-motion-title">
+          <h3 id="settings-motion-title">Motion</h3>
+          <p>Turn interface transitions and entrance animations on or off.</p>
+          <label class="preference-toggle" for="animations-enabled">
+            <input id="animations-enabled" type="checkbox" checked>
+            <span>Enable animations</span>
+          </label>
+        </section>
         <section class="settings-item" aria-labelledby="settings-storage-title">
           <h3 id="settings-storage-title">Local storage</h3>
           <p>PEN501 keeps learning data in this browser. It does not sync to another device.</p>

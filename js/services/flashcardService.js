@@ -97,6 +97,7 @@ export async function getFlashcardSets() {
       ...set,
       cardCount: setCards.length,
       dueCount: setCards.filter((card) => isFlashcardDue(card, now)).length,
+      reviewedCount: setCards.reduce((total, card) => total + (Number(card.reviewCount) || 0), 0),
     };
   }).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 }

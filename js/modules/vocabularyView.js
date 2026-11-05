@@ -14,6 +14,7 @@ export function renderVocabulary() {
       <nav class="vocabulary-nav" role="tablist" aria-label="Vocabulary workspace">
         <button class="vocabulary-nav__tab" id="vocabulary-tab-study" type="button" role="tab" aria-selected="true" aria-controls="study-list-panel" data-vocabulary-panel="study-list">Study list</button>
         <button class="vocabulary-nav__tab" id="vocabulary-tab-add" type="button" role="tab" aria-selected="false" aria-controls="add-word-panel" data-vocabulary-panel="add-word" tabindex="-1">Add word</button>
+        <button class="vocabulary-nav__tab" id="vocabulary-tab-flashcards" type="button" role="tab" aria-selected="false" aria-controls="flashcard-panel" data-vocabulary-panel="flashcards" tabindex="-1">Flashcards</button>
       </nav>
 
       <section class="vocabulary-panel" id="study-list-panel" role="tabpanel" aria-labelledby="vocabulary-tab-study">
@@ -22,16 +23,12 @@ export function renderVocabulary() {
           <article class="vocabulary-stat"><span>Cards due</span><strong id="vocabulary-due-count">0</strong></article>
           <article class="vocabulary-stat"><span>Study sets</span><strong id="vocabulary-set-count">0</strong></article>
         </div>
-        <div class="vocabulary-study-cta">
-          <p>Review cards that are ready today.</p>
-          <button class="button button--primary" id="study-due-all" type="button" disabled>Study due (0)</button>
-        </div>
 
-        <section class="panel vocabulary-tools" aria-label="Search and filter vocabulary">
-          <div class="vocabulary-tools__search">
-            <label for="vocabulary-search">Search your words</label>
-            <input id="vocabulary-search" class="field-control" type="search" placeholder="Word, meaning, example, or tag" autocomplete="off">
-          </div>
+        <section class="panel vocabulary-tools" aria-label="Filter the study list">
+          <button class="search-trigger" id="open-vocabulary-search" type="button" aria-label="Search your words" aria-haspopup="dialog" aria-controls="vocabulary-search-dialog" title="Search your words">
+            <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+            <span class="sr-only">Search your words</span>
+          </button>
           <div class="vocabulary-tools__select">
             <label for="vocabulary-filter-pos">Part of speech</label>
             <select id="vocabulary-filter-pos" class="field-control">
@@ -52,11 +49,10 @@ export function renderVocabulary() {
         <div class="vocabulary-toolbar">
           <div class="vocabulary-toolbar__selection">
             <label class="select-all-control"><input id="select-all-visible" type="checkbox"><span>Select all shown</span></label>
-            <span id="visible-word-count">0 words</span>
+            <span id="visible-word-count">0 shown</span>
             <span id="selection-count">0 selected</span>
           </div>
           <div class="vocabulary-toolbar__actions">
-            <button class="button button--secondary" id="create-flashcard-set" type="button" disabled>Create set</button>
             <button class="button button--destructive" id="delete-selected" type="button" disabled>Delete selected</button>
             <input id="import-vocabulary" class="csv-file-input" type="file" accept=".csv,text/csv" aria-label="Choose a vocabulary CSV file">
             <label class="csv-file-label" for="import-vocabulary">Import CSV</label>
@@ -73,13 +69,6 @@ export function renderVocabulary() {
           </table>
         </div>
         <div class="vocabulary-mobile-list" id="vocabulary-mobile-list"></div>
-
-        <details class="flashcard-sets-section" id="flashcard-sets-details">
-          <summary>Flashcard sets <span class="flashcard-sets-count" id="flashcard-sets-count">0</span></summary>
-          <div class="flashcard-set-list" id="flashcard-set-list" aria-live="polite">
-            <p class="vocabulary-empty">Loading flashcard sets…</p>
-          </div>
-        </details>
       </section>
 
       <section class="vocabulary-panel vocabulary-add-panel" id="add-word-panel" role="tabpanel" aria-labelledby="vocabulary-tab-add" hidden>
@@ -119,7 +108,49 @@ export function renderVocabulary() {
           </div>
         </form>
       </section>
+
+      <section class="vocabulary-panel flashcard-library" id="flashcard-panel" role="tabpanel" aria-labelledby="vocabulary-tab-flashcards" hidden>
+        <header class="flashcard-library__header">
+          <div>
+            <p class="eyebrow">Review / Spaced repetition</p>
+            <h3>Your flashcard sets</h3>
+            <p>Choose a set to study, or build one from your Study list.</p>
+          </div>
+          <div class="flashcard-library__actions">
+            <button class="button button--secondary" id="study-due-all" type="button" disabled>Study due (0)</button>
+            <button class="button button--primary" id="open-create-flashcard-set" type="button" aria-label="Create a flashcard set">
+              <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M12 4v16M4 12h16"/></svg>
+              <span>Create set</span>
+            </button>
+          </div>
+        </header>
+        <div class="vocabulary-stats flashcard-stats" aria-label="Flashcard study summary">
+          <article class="vocabulary-stat"><span>Study sets</span><strong id="flashcard-set-count">0</strong></article>
+          <article class="vocabulary-stat"><span>Cards due</span><strong id="flashcard-due-count">0</strong></article>
+          <article class="vocabulary-stat"><span>Reviews completed</span><strong id="flashcard-review-count">0</strong></article>
+        </div>
+        <p class="vocabulary-status" id="flashcard-status" role="status" aria-live="polite"></p>
+        <div class="flashcard-set-list" id="flashcard-set-list" aria-live="polite">
+          <p class="vocabulary-empty">Loading flashcard sets…</p>
+        </div>
+      </section>
     </section>
+
+    <dialog class="raw-dialog search-dialog" id="vocabulary-search-dialog" aria-labelledby="vocabulary-search-title">
+      <div class="search-dialog__header">
+        <div>
+          <p class="eyebrow">Study list / Find a word</p>
+          <h2 id="vocabulary-search-title">Search your words</h2>
+        </div>
+        <button class="icon-button" id="close-vocabulary-search" type="button" aria-label="Close search" title="Close search">×</button>
+      </div>
+      <label for="vocabulary-search">Search by word, meaning, example, or tag</label>
+      <input id="vocabulary-search" class="field-control" type="search" placeholder="Start typing…" autocomplete="off">
+      <div class="search-dialog__footer">
+        <p id="search-result-count" role="status" aria-live="polite">All words shown</p>
+        <button class="button button--secondary" id="clear-vocabulary-search" type="button">Clear search</button>
+      </div>
+    </dialog>
 
     <section class="flashcard-study" id="flashcard-study" hidden aria-labelledby="study-heading">
       <header class="module-header flashcard-study__header">
@@ -127,7 +158,7 @@ export function renderVocabulary() {
           <p class="eyebrow">Flashcard review</p>
           <h2 id="study-heading" tabindex="-1">Study session</h2>
         </div>
-        <button class="button button--secondary" id="study-close" type="button">Back to vocabulary</button>
+        <button class="button button--secondary" id="study-close" type="button">Back to flashcards</button>
       </header>
       <p class="study-progress" id="study-progress" role="status" aria-live="polite"></p>
       <div class="flashcard-stage" id="flashcard-stage">
@@ -155,25 +186,32 @@ export function renderVocabulary() {
       <p class="study-message" id="study-message" role="status" aria-live="polite"></p>
     </section>
 
-    <dialog class="raw-dialog" id="flashcard-set-dialog" aria-labelledby="flashcard-set-dialog-title">
+    <dialog class="raw-dialog flashcard-create-dialog" id="flashcard-set-dialog" aria-labelledby="flashcard-set-dialog-title">
       <form id="flashcard-set-form" novalidate>
-        <p class="eyebrow">Selected vocabulary</p>
-        <h2 id="flashcard-set-dialog-title">Create a set</h2>
-        <div class="form-field">
-          <label for="flashcard-set-name">Set name *</label>
-          <input class="field-control" id="flashcard-set-name" name="name" type="text" maxlength="120" required autocomplete="off">
+        <header class="search-dialog__header">
+          <div>
+            <p class="eyebrow">Flashcards / New set</p>
+            <h2 id="flashcard-set-dialog-title">Create a set</h2>
+          </div>
+          <button class="icon-button" id="flashcard-set-cancel-icon" type="button" aria-label="Close create set" title="Close">×</button>
+        </header>
+        <div class="flashcard-create-fields flashcard-create-fields--single">
+          <div class="form-field">
+            <label for="flashcard-set-name">Set name *</label>
+            <input class="field-control" id="flashcard-set-name" name="name" type="text" maxlength="120" required autocomplete="off">
+            <p class="field-hint">Cards show the English word and part of speech first, then its meaning.</p>
+          </div>
         </div>
-        <div class="form-field">
-          <label for="flashcard-direction">Card direction</label>
-          <select class="field-control" id="flashcard-direction" name="direction">
-            <option value="english-to-vietnamese">English → Vietnamese</option>
-            <option value="vietnamese-to-english">Vietnamese → English</option>
-          </select>
+        <div class="flashcard-word-picker__heading">
+          <label for="flashcard-word-search">Choose words from Study list</label>
+          <span id="flashcard-selection-count">0 selected</span>
         </div>
-        <p class="flashcard-set-selection" id="flashcard-set-selection"></p>
+        <input class="field-control flashcard-word-search" id="flashcard-word-search" type="search" placeholder="Filter words…" autocomplete="off">
+        <div class="flashcard-word-picker" id="flashcard-create-word-list" aria-label="Words available for this set"></div>
+        <p class="flashcard-set-selection" id="flashcard-set-selection" role="status" aria-live="polite">Select at least one word.</p>
         <div class="dialog-actions">
           <button class="button button--secondary" id="flashcard-set-cancel" type="button">Cancel</button>
-          <button class="button button--primary" type="submit">Create set</button>
+          <button class="button button--primary" id="flashcard-set-submit" type="submit">Create flashcards</button>
         </div>
       </form>
     </dialog>
@@ -185,7 +223,7 @@ export function makeButton(label, action, id, variant = "secondary") {
   button.type = "button";
   button.className = `button button--${variant} button--small`;
   button.dataset.action = action;
-  button.dataset.id = id;
+  if (id) button.dataset.id = id;
   button.textContent = label;
   return button;
 }

@@ -1,5 +1,5 @@
 @media (max-width: 1100px) {
-  :root { --sidebar-width: 232px; }
+  :root { --sidebar-width: 252px; }
   .main-content { padding: var(--space-4); }
   .topbar { padding-inline: var(--space-4); }
   .quick-actions { gap: var(--space-2); }
@@ -9,8 +9,7 @@
 @media (max-width: 820px) {
   .sidebar {
     width: min(86vw, 320px);
-    transform: translateX(-105%);
-    transition: transform 180ms ease-out;
+    transform: translateX(105%);
   }
 
   body.nav-open .sidebar { transform: translateX(0); }
@@ -19,18 +18,11 @@
     position: fixed;
     z-index: 19;
     inset: 0;
-    background: var(--color-black);
-    opacity: 0.65;
+    background: rgb(10 10 10 / 45%);
   }
 
   body.nav-open .sidebar-scrim { display: block; }
-  .workspace { margin-left: 0; }
-
-  .menu-toggle {
-    display: inline-flex;
-    min-height: 44px;
-    padding-inline: 12px;
-  }
+  .workspace { margin-inline: 0 !important; }
 
   .topbar { min-height: 92px; gap: var(--space-2); padding: var(--space-2) var(--space-3); }
   .topbar__eyebrow { font-size: 0.5625rem; }
@@ -71,6 +63,8 @@
   *,
   *::before,
   *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }

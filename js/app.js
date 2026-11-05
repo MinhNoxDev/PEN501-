@@ -1,5 +1,5 @@
 import { APP_CONFIG } from "./config.js";
-import { initializePreferences, setThemePreference, appState } from "./state.js";
+import { initializePreferences, setAnimationPreference, setThemePreference, appState } from "./state.js";
 import { normalizeInitialRoute, renderRoute } from "./router.js";
 import { loadDashboardSummary } from "./modules/dashboard.js";
 import { mountVocabulary } from "./modules/vocabulary.js";
@@ -14,21 +14,41 @@ const mobileLayout = window.matchMedia("(max-width: 820px)");
 let cleanupActiveView = null;
 
 function syncSidebarInert() {
-  sidebar.inert = mobileLayout.matches && !document.body.classList.contains("nav-open");
+  sidebar.inert = mobileLayout.matches
+    ? !document.body.classList.contains("nav-open")
+    : document.body.classList.contains("nav-hidden");
 }
 
-function closeMobileNavigation(returnFocus = false) {
-  document.body.classList.remove("nav-open");
-  menuToggle.setAttribute("aria-expanded", "false");
-  syncSidebarInert();
-  if (returnFocus && mobileLayout.matches) menuToggle.focus();
+function navigationIsOpen() {
+  return mobileLayout.matches
+    ? document.body.classList.contains("nav-open")
+    : !document.body.classList.contains("nav-hidden");
 }
 
-function toggleMobileNavigation() {
-  const isOpen = document.body.classList.toggle("nav-open");
+function syncNavigationButton() {
+  const isOpen = navigationIsOpen();
+  const label = `${isOpen ? "Close" : "Open"} navigation`;
   menuToggle.setAttribute("aria-expanded", String(isOpen));
+  menuToggle.setAttribute("aria-label", label);
+  menuToggle.title = label;
+}
+
+function closeNavigation(returnFocus = false) {
+  if (mobileLayout.matches) document.body.classList.remove("nav-open");
+  else document.body.classList.add("nav-hidden");
   syncSidebarInert();
+  syncNavigationButton();
+  if (returnFocus) menuToggle.focus();
+}
+
+function toggleNavigation() {
+  if (mobileLayout.matches) document.body.classList.toggle("nav-open");
+  else document.body.classList.toggle("nav-hidden");
+  const isOpen = navigationIsOpen();
+  syncSidebarInert();
+  syncNavigationButton();
   if (isOpen) sidebar.querySelector(".primary-nav a")?.focus();
+  else menuToggle.focus();
 }
 
 function formatBytes(bytes) {
@@ -198,6 +218,10 @@ function renderCurrentRoute() {
   cleanupActiveView = null;
   const key = renderRoute();
   if (key === "settings") void refreshStorageStatus();
+  if (key === "settings") {
+    const animationToggle = document.getElementById("animations-enabled");
+    if (animationToggle) animationToggle.checked = appState.animationsEnabled;
+  }
   if (key === "dashboard") void refreshDashboard();
   if (key === "vocabulary") cleanupActiveView = mountVocabulary(document.getElementById("view-content"));
 }
@@ -211,15 +235,22 @@ function initializeApp() {
     setThemePreference(event.target.value);
   });
 
-  menuToggle.addEventListener("click", toggleMobileNavigation);
-  sidebarScrim.addEventListener("click", () => closeMobileNavigation(true));
+  menuToggle.addEventListener("click", toggleNavigation);
+  sidebarScrim.addEventListener("click", () => closeNavigation(true));
   document.querySelectorAll(".nav-link, .wordmark").forEach((link) => {
-    link.addEventListener("click", closeMobileNavigation);
+    link.addEventListener("click", () => closeNavigation());
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeMobileNavigation(true);
+    if (event.key === "Escape" && navigationIsOpen() && !document.querySelector("dialog[open]")) closeNavigation(true);
   });
-  mobileLayout.addEventListener("change", syncSidebarInert);
+  mobileLayout.addEventListener("change", () => {
+    if (!mobileLayout.matches) document.body.classList.remove("nav-open");
+    syncSidebarInert();
+    syncNavigationButton();
+  });
+  document.addEventListener("change", (event) => {
+    if (event.target.id === "animations-enabled") setAnimationPreference(event.target.checked);
+  });
 
   document.addEventListener("click", (event) => {
     const exportButton = event.target.closest("#backup-export");
@@ -239,9 +270,10 @@ function initializeApp() {
   normalizeInitialRoute();
   renderCurrentRoute();
   syncSidebarInert();
+  syncNavigationButton();
   window.addEventListener("hashchange", () => {
     renderCurrentRoute();
-    closeMobileNavigation();
+    closeNavigation();
     document.getElementById("main-content").focus({ preventScroll: true });
   });
 }
