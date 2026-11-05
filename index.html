@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="description" content="PEN501 is a personal English learning workspace.">
+    <title>PEN501 — Personal English Learning Workspace</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/typography.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/modules/dashboard.css">
+    <link rel="stylesheet" href="css/modules/vocabulary.css">
+    <link rel="stylesheet" href="css/modules/flashcards.css">
+    <link rel="stylesheet" href="css/themes/light.css">
+    <link rel="stylesheet" href="css/themes/dark.css">
+    <link rel="stylesheet" href="css/responsive.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <div class="app-shell">
+      <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Close navigation"></button>
+      <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+        <a class="wordmark" href="#/dashboard" aria-label="PEN501 home">
+          <span class="wordmark__name">PEN501</span>
+          <span class="wordmark__caption">ENGLISH LEARNING<br>WORKSPACE</span>
+        </a>
+
+        <nav class="primary-nav" aria-label="Workspace">
+          <p class="nav-heading">Workspace</p>
+          <a class="nav-link" href="#/dashboard" data-route="dashboard"><span>Dashboard</span></a>
+          <a class="nav-link" href="#/vocabulary" data-route="vocabulary"><span>Vocabulary</span><span class="nav-link__phase">READY</span></a>
+          <a class="nav-link" href="#/writing" data-route="writing"><span>Writing</span><span class="nav-link__phase">PHASE 3</span></a>
+          <a class="nav-link" href="#/reader" data-route="reader"><span>Reader</span><span class="nav-link__phase">PHASE 4</span></a>
+          <a class="nav-link" href="#/progress" data-route="progress"><span>Progress</span><span class="nav-link__phase">IN DEVELOPMENT</span></a>
+        </nav>
+
+        <nav class="secondary-nav" aria-label="Preferences">
+          <p class="nav-heading">Preferences</p>
+          <a class="nav-link" href="#/settings" data-route="settings"><span>Settings</span></a>
+        </nav>
+
+        <div class="sidebar__foot">
+          <span class="status-chip">LOCAL-FIRST</span>
+          <p>Your learning data stays in this browser.</p>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <button class="menu-toggle button button--secondary" id="menu-toggle" type="button" aria-expanded="false" aria-controls="sidebar">MENU</button>
+          <div class="topbar__title-wrap">
+            <p class="topbar__eyebrow">PEN501 / PERSONAL WORKSPACE</p>
+            <h1 class="topbar__title" id="page-title">Dashboard</h1>
+          </div>
+          <label class="theme-control" for="theme-select">
+            <span>Theme</span>
+            <select id="theme-select" name="theme">
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+        </header>
+
+        <main id="main-content" class="main-content" tabindex="-1">
+          <div id="view-content">
+            <section class="app-startup-message" role="alert" aria-labelledby="startup-message-title">
+              <p class="eyebrow">PEN501 did not start</p>
+              <h2 id="startup-message-title">Open this workspace through a local web server.</h2>
+              <p>Opening <code>index.html</code> directly blocks the JavaScript modules that power Vocabulary and Dashboard.</p>
+              <ol>
+                <li>Open this project folder in PowerShell.</li>
+                <li>Run <code>python -m http.server 8000</code>.</li>
+                <li>Visit <code>http://localhost:8000</code> in your browser.</li>
+              </ol>
+            </section>
+          </div>
+        </main>
+        <footer class="app-footer">
+          <span>PEN501 <span id="app-version"></span></span>
+          <span>Personal English Learning Workspace</span>
+        </footer>
+      </div>
+    </div>
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

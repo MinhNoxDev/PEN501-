@@ -1,0 +1,10 @@
+{
+  "name": "PEN501 — Personal English Learning Workspace",
+  "short_name": "PEN501",
+  "description": "A local-first workspace for English learning.",
+  "start_url": "./#/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": []
+}

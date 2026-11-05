@@ -1,0 +1,279 @@
+.module-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-bottom: var(--border-heavy) solid var(--border-color);
+  padding-bottom: var(--space-4);
+}
+
+.module-header .eyebrow { margin-bottom: var(--space-2); }
+.module-header h2 { max-width: 760px; }
+
+.module-header__actions,
+.vocabulary-toolbar__actions,
+.flashcard-controls,
+.flashcard-rating,
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.vocabulary-tools {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.5fr) minmax(180px, 0.8fr) minmax(180px, 0.8fr);
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.vocabulary-tools label,
+.form-field > label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-family: var(--font-heading);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.vocabulary-tools .field-control,
+.form-field .field-control { width: 100%; }
+
+.vocabulary-tools .field-control {
+  min-height: 48px;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+.vocabulary-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  border-top: var(--border-thick) solid var(--border-color);
+  border-bottom: var(--border-thick) solid var(--border-color);
+  padding: var(--space-2) 0;
+}
+
+.vocabulary-toolbar__selection {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.select-all-control {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.select-all-control input,
+.vocabulary-table input[type="checkbox"],
+.vocabulary-card__check {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--text-primary);
+}
+
+.vocabulary-toolbar__actions { justify-content: flex-end; }
+
+.button--destructive {
+  background: var(--color-error);
+  color: var(--color-white);
+}
+
+.button--destructive:hover {
+  background: var(--surface-inverted);
+  color: var(--color-error);
+}
+
+.button--small {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+}
+
+.csv-file-label {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  border: var(--border-thick) solid var(--border-color);
+  padding: 8px 14px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.csv-file-label:hover {
+  background: var(--surface-inverted);
+  color: var(--text-inverted);
+}
+
+.csv-file-input {
+  max-width: 230px;
+  min-height: 44px;
+  border: var(--border-thick) solid var(--border-color);
+  background: var(--surface-input);
+  color: var(--text-primary);
+  padding: 6px;
+  font-size: 0.75rem;
+}
+
+.csv-file-input:focus-visible,
+.vocabulary-table input:focus-visible,
+.vocabulary-card input:focus-visible,
+.select-all-control input:focus-visible {
+  outline: var(--border-heavy) solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+.vocabulary-status {
+  min-height: 24px;
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.vocabulary-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border-top: var(--border-heavy) solid var(--border-color);
+}
+
+.vocabulary-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.vocabulary-table th,
+.vocabulary-table td {
+  border-bottom: var(--border-thick) solid var(--border-color);
+  padding: 12px 10px;
+  vertical-align: top;
+}
+
+.vocabulary-table th {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.vocabulary-table td { font-size: 0.875rem; }
+.vocabulary-table__check { width: 54px; text-align: center !important; }
+.vocabulary-word-cell { min-width: 140px; font-weight: 700; }
+.vocabulary-table td:nth-child(4) { min-width: 200px; }
+.vocabulary-table td:nth-child(5) { min-width: 220px; }
+
+.vocabulary-tags {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  line-height: 1.4;
+}
+
+.row-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.table-empty-state { padding: var(--space-5) var(--space-3) !important; text-align: center; }
+.vocabulary-mobile-list { display: none; }
+
+.flashcard-sets-section { margin-top: var(--space-6); }
+.flashcard-set-list { border-bottom: var(--border-thick) solid var(--border-color); }
+
+.flashcard-set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-top: var(--border-thick) solid var(--border-color);
+  padding: var(--space-3) 0;
+}
+
+.flashcard-set-row__details h4 {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.flashcard-set-row__details p { margin-top: var(--space-1); font-family: var(--font-mono); font-size: 0.75rem; }
+.vocabulary-empty { padding: var(--space-4) 0; }
+
+.raw-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-height: min(90vh, 920px);
+  overflow-y: auto;
+  border: var(--border-heavy) solid var(--border-color);
+  border-radius: 0;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  padding: var(--space-4);
+}
+
+.raw-dialog::backdrop { background: #000000; opacity: 0.72; }
+.raw-dialog h2 { margin-bottom: var(--space-4); font-size: clamp(1.75rem, 4vw, 2.5rem); }
+.raw-dialog .form-field { margin-top: var(--space-3); }
+.raw-dialog textarea { min-height: 90px; resize: vertical; }
+.raw-dialog .field-control { font-family: var(--font-mono); font-size: 0.875rem; }
+.vocabulary-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-3); }
+.form-field--wide { grid-column: 1 / -1; }
+.label-hint { font-family: var(--font-body); font-size: 0.6875rem; font-weight: 400; text-transform: none; }
+
+.autosave-status,
+.flashcard-set-selection {
+  margin-top: var(--space-3);
+  border-left: var(--border-heavy) solid var(--border-color);
+  padding-left: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.autosave-status[data-state="success"] { border-color: var(--color-success); }
+.autosave-status[data-state="error"] { border-color: var(--color-error); }
+.dialog-actions { justify-content: flex-end; margin-top: var(--space-4); }
+.raw-dialog[open] { display: block; }
+
+.flashcard-study { max-width: 1000px; margin: 0 auto; }
+.flashcard-study[hidden],
+.vocabulary-page[hidden],
+.flashcard-stage[hidden] { display: none !important; }
+.study-progress { margin-top: var(--space-4); font-family: var(--font-mono); font-size: 0.8125rem; }
+
+.flashcard-stage {
+  min-height: 340px;
+  margin-top: var(--space-3);
+}
+
+.flashcard-face {
+  display: flex;
+  min-height: 320px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  border: var(--border-heavy) solid var(--border-color);
+  border-radius: 0;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  padding: var(--space-4);
+  text-align: left;
+}
+
+.flashcard-face:hover { background: var(--surface-inverted); color: var(--text-inverted); }
+.flashcard-face__label,.flashcard-face__hint { font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.flashcard-face__content { margin-block: auto; white-space: pre-wrap; font-family: var(--font-heading); font-size: clamp(1.75rem, 5vw, 3.5rem); line-height: 1.1; }
+.flashcard-controls { margin-top: var(--space-3); }
+.flashcard-rating { justify-content: space-between; margin-top: var(--space-4); border-top: var(--border-heavy) solid var(--border-color); padding-top: var(--space-3); }
+.study-message { min-height: 24px; margin-top: var(--space-2); font-family: var(--font-mono); font-size: 0.75rem; }

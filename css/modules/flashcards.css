@@ -1,0 +1,34 @@
+@media (max-width: 900px) {
+  .vocabulary-tools { grid-template-columns: minmax(0, 1fr) minmax(180px, 0.75fr); }
+  .vocabulary-tools__search { grid-column: 1 / -1; }
+}
+
+@media (max-width: 700px) {
+  .module-header { align-items: flex-start; flex-direction: column; }
+  .module-header__actions { width: 100%; }
+  .module-header__actions .button { flex: 1; }
+  .vocabulary-tools { grid-template-columns: 1fr; }
+  .vocabulary-tools__search { grid-column: auto; }
+  .vocabulary-toolbar { align-items: flex-start; flex-direction: column; }
+  .vocabulary-toolbar__actions { width: 100%; justify-content: flex-start; }
+  .vocabulary-toolbar__actions .button,
+  .csv-file-label { flex: 1 1 auto; }
+  .csv-file-input { width: 100%; max-width: none; }
+  .vocabulary-table-wrap { display: none; }
+  .vocabulary-mobile-list { display: grid; gap: var(--space-2); }
+  .vocabulary-card { border: var(--border-heavy) solid var(--border-color); padding: var(--space-3); }
+  .vocabulary-card > header { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: var(--space-2); align-items: start; }
+  .vocabulary-card > header h3 { grid-column: 2; font-size: 1.5rem; overflow-wrap: anywhere; }
+  .vocabulary-card > header .status-chip { grid-column: 2; justify-self: start; }
+  .vocabulary-card__check { grid-row: 1 / span 2; }
+  .vocabulary-card__meaning { margin-top: var(--space-3); font-weight: 600; }
+  .vocabulary-card__example { margin-top: var(--space-2); border-left: var(--border-thick) solid var(--border-color); padding-left: var(--space-2); font-size: 0.875rem; }
+  .vocabulary-card .row-actions { margin-top: var(--space-3); }
+  .flashcard-set-row { align-items: flex-start; flex-direction: column; }
+  .flashcard-face { min-height: 280px; }
+  .flashcard-rating { align-items: stretch; flex-direction: column; }
+  .flashcard-rating .button { width: 100%; }
+  .raw-dialog { padding: var(--space-3); }
+  .vocabulary-form-grid { grid-template-columns: 1fr; }
+  .form-field--wide { grid-column: auto; }
+}

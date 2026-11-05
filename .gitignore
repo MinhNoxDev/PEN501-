@@ -1,0 +1,16 @@
+# Local development artifacts
+.DS_Store
+Thumbs.db
+*.log
+
+# Local environment and editor files
+.env
+.vscode/
+.idea/
+
+# Dependencies are not required for the static-first application.
+node_modules/
+
+# Browser test output
+playwright-report/
+test-results/
