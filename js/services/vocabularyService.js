@@ -161,20 +161,6 @@ export function parseVocabularyCsv(text, existingWords = []) {
   return { accepted, rejected, duplicates };
 }
 
-function csvCell(value) {
-  let text = String(value ?? "");
-  if (/^[\s]*[=+\-@]/.test(text)) text = `'${text}`;
-  return `"${text.replaceAll('"', '""')}"`;
-}
-
-export function buildVocabularyCsv(words) {
-  const rows = [["word", "partOfSpeech", "meaning", "example", "tags"]];
-  for (const word of words) {
-    rows.push([word.word, word.partOfSpeech, word.meaning, word.example, (word.tags ?? []).join("|")]);
-  }
-  return `\uFEFF${rows.map((row) => row.map(csvCell).join(",")).join("\r\n")}`;
-}
-
 export async function importVocabularyCsv(text) {
   const current = await getVocabulary();
   const result = parseVocabularyCsv(text, current);

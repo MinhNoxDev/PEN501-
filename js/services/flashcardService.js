@@ -55,15 +55,18 @@ export async function createFlashcardSet(name, direction, vocabulary) {
     direction,
   });
   const cards = vocabulary.map((word) => {
-    const example = word.example ? `Example: ${word.example}` : "";
-    const back = direction === "english-to-vietnamese"
-      ? [word.meaning, example].filter(Boolean).join("\n\n")
-      : [word.word, word.partOfSpeech, example].filter(Boolean).join("\n\n");
+    const front = direction === "english-to-vietnamese" ? word.word : word.meaning;
+    const back = direction === "english-to-vietnamese" ? word.meaning : word.word;
     return {
       setId: set.id,
       vocabularyId: word.id,
-      front: direction === "english-to-vietnamese" ? word.word : word.meaning,
+      direction,
+      front,
       back,
+      vocabularyWord: word.word,
+      partOfSpeech: word.partOfSpeech,
+      meaning: word.meaning,
+      example: word.example || "",
       repetitions: 0,
       easeFactor: 2.5,
       interval: 0,
@@ -100,8 +103,33 @@ export async function getFlashcardSets() {
 
 export async function getStudyCards(setId, { dueOnly = true } = {}) {
   const cards = await storage.listByIndex("flashcards", "setId", setId);
+  const needsVocabulary = cards.some((card) => !card.vocabularyWord || !card.partOfSpeech || !card.meaning || card.example === undefined);
+  const needsSetDirection = cards.some((card) => !card.direction);
+  const [vocabulary, sets] = await Promise.all([
+    needsVocabulary ? storage.getVocabulary() : Promise.resolve([]),
+    needsSetDirection ? storage.getFlashcardSets() : Promise.resolve([]),
+  ]);
+  const wordsById = new Map(vocabulary.map((word) => [word.id, word]));
+  const set = sets.find((item) => item.id === setId);
+  const setDirection = set?.direction || (set?.description?.toLowerCase().includes("vietnamese to english")
+    ? "vietnamese-to-english"
+    : "english-to-vietnamese");
   const toTime = (value) => typeof value === "number" ? value : Date.parse(value || "") || 0;
-  return cards.filter((card) => !dueOnly || isFlashcardDue(card)).sort((a, b) => {
+  return cards.map((card) => {
+    const word = wordsById.get(card.vocabularyId);
+    const vocabularyWord = card.vocabularyWord || word?.word || "";
+    const direction = card.direction || (word
+      ? (card.front === word.meaning ? "vietnamese-to-english" : "english-to-vietnamese")
+      : setDirection);
+    return {
+      ...card,
+      direction,
+      vocabularyWord,
+      partOfSpeech: card.partOfSpeech || word?.partOfSpeech || "",
+      meaning: card.meaning || word?.meaning || (direction === "english-to-vietnamese" ? card.back : card.front),
+      example: card.example ?? word?.example ?? "",
+    };
+  }).filter((card) => !dueOnly || isFlashcardDue(card)).sort((a, b) => {
     return toTime(a.nextReview) - toTime(b.nextReview);
   });
 }

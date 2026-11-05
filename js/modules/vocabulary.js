@@ -1,5 +1,4 @@
 import {
-  buildVocabularyCsv,
   deleteVocabularyEntries,
   deleteVocabularyEntry,
   getVocabulary,
@@ -21,13 +20,15 @@ export function mountVocabulary(root) {
   const selectedIds = new Set();
   let sets = [];
   let mounted = true;
+  let activePanel = "study-list";
   let autosaveTimer = null;
   let draftVersion = 0;
   let saveQueue = Promise.resolve();
 
   const byId = (id) => root.querySelector(`#${id}`);
   const status = byId("vocabulary-status");
-  const wordDialog = byId("vocabulary-dialog");
+  const studyPanel = byId("study-list-panel");
+  const addPanel = byId("add-word-panel");
   const wordForm = byId("vocabulary-form");
   const autoStatus = byId("vocabulary-autosave-status");
   const setDialog = byId("flashcard-set-dialog");
@@ -47,6 +48,21 @@ export function mountVocabulary(root) {
   function setAutosaveMessage(message, state = "default") {
     autoStatus.textContent = message;
     autoStatus.dataset.state = state;
+  }
+
+  function setActivePanel(panel, { focus = false } = {}) {
+    activePanel = panel;
+    studyPanel.hidden = panel !== "study-list";
+    addPanel.hidden = panel !== "add-word";
+    for (const tab of root.querySelectorAll("[data-vocabulary-panel]")) {
+      const selected = tab.dataset.vocabularyPanel === panel;
+      tab.setAttribute("aria-selected", String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+    }
+    if (focus) {
+      if (panel === "add-word") byId("vocabulary-word").focus();
+      else byId("vocabulary-tab-study").focus();
+    }
   }
 
   async function persistForm(snapshot, version) {
@@ -86,23 +102,19 @@ export function mountVocabulary(root) {
     await persistForm(snapshot, version);
   }
 
-  async function closeWordDialog(saveDraft = true) {
-    window.clearTimeout(autosaveTimer);
-    const version = draftVersion;
-    if (saveDraft) {
+  async function showStudyList({ focus = false } = {}) {
+    if (activePanel === "add-word") {
       try {
         await flushCurrentDraft();
       } catch (error) {
-        if (mounted && version === draftVersion) setAutosaveMessage(error.message || "Could not save this word. Keep the dialog open and try again.", "error");
+        setAutosaveMessage(error.message || "Could not save this word. Keep editing and try again.", "error");
         return;
       }
     }
-    if (!mounted || version !== draftVersion) return;
-    draftVersion += 1;
-    if (wordDialog.open) wordDialog.close();
+    setActivePanel("study-list", { focus });
   }
 
-  function openWordDialog(word = null) {
+  function openWordForm(word = null) {
     window.clearTimeout(autosaveTimer);
     draftVersion += 1;
     wordForm.reset();
@@ -112,10 +124,10 @@ export function mountVocabulary(root) {
     wordForm.elements.meaning.value = word?.meaning ?? "";
     wordForm.elements.example.value = word?.example ?? "";
     wordForm.elements.tags.value = (word?.tags ?? []).join(", ");
-    byId("vocabulary-dialog-title").textContent = word ? "Edit a word" : "Add a word";
+    byId("vocabulary-form-title").textContent = word ? "Edit a word" : "Add a word";
+    byId("vocabulary-save").textContent = word ? "Save changes" : "Save word";
     setAutosaveMessage("Enter a word, part of speech, and meaning to enable autosave.");
-    wordDialog.showModal();
-    byId("vocabulary-word").focus();
+    setActivePanel("add-word", { focus: true });
   }
 
   function sortedVisibleWords() {
@@ -140,10 +152,12 @@ export function mountVocabulary(root) {
   function updateSelectionControls(visible) {
     const selectedVisible = visible.filter((word) => selectedIds.has(word.id)).length;
     byId("selection-count").textContent = `${selectedIds.size} selected`;
+    byId("visible-word-count").textContent = `${visible.length} shown`;
     byId("create-flashcard-set").disabled = selectedIds.size === 0;
     byId("delete-selected").disabled = selectedIds.size === 0;
     byId("select-all-visible").checked = visible.length > 0 && selectedVisible === visible.length;
     byId("select-all-visible").indeterminate = selectedVisible > 0 && selectedVisible < visible.length;
+    byId("vocabulary-total-count").textContent = String(words.length);
   }
 
   function renderVocabularyRows() {
@@ -160,9 +174,15 @@ export function mountVocabulary(root) {
       cell.textContent = words.length === 0 ? "No vocabulary yet. Add a word or import a CSV to begin." : "No words match this search or filter.";
       row.append(cell);
       body.append(row);
-      const empty = document.createElement("p");
-      empty.className = "vocabulary-empty";
-      empty.textContent = cell.textContent;
+      const empty = document.createElement("div");
+      empty.className = "vocabulary-empty-state";
+      const message = document.createElement("p");
+      message.textContent = cell.textContent;
+      empty.append(message);
+      if (words.length === 0) {
+        const add = makeButton("Add your first word", "add-first-word", "", "primary");
+        empty.append(add);
+      }
       mobile.append(empty);
     } else {
       for (const word of visible) {
@@ -171,7 +191,6 @@ export function mountVocabulary(root) {
         mobile.append(renderWordCard(word, selected));
       }
     }
-    byId("export-vocabulary").disabled = words.length === 0;
     updateSelectionControls(visible);
     return visible;
   }
@@ -180,12 +199,16 @@ export function mountVocabulary(root) {
     const list = byId("flashcard-set-list");
     list.replaceChildren();
     const dueTotal = sets.reduce((sum, set) => sum + set.dueCount, 0);
+    const cardTotal = sets.reduce((sum, set) => sum + set.cardCount, 0);
     byId("study-due-all").disabled = dueTotal === 0;
-    byId("study-due-all").textContent = dueTotal ? `Study due (${dueTotal})` : "Study due (0)";
+    byId("study-due-all").textContent = `Study due (${dueTotal})`;
+    byId("vocabulary-due-count").textContent = String(dueTotal);
+    byId("vocabulary-set-count").textContent = String(sets.length);
+    byId("flashcard-sets-count").textContent = `${sets.length} · ${cardTotal} cards`;
     if (sets.length === 0) {
       const empty = document.createElement("p");
       empty.className = "vocabulary-empty";
-      empty.textContent = "No flashcard sets yet. Select words above and choose Create flashcard set.";
+      empty.textContent = "No flashcard sets yet. Select words above, then choose Create set.";
       list.append(empty);
       return;
     }
@@ -212,10 +235,7 @@ export function mountVocabulary(root) {
   async function refreshData() {
     if (!mounted) return;
     status.textContent = "Loading vocabulary from this browser…";
-    const [nextWords, nextSets] = await Promise.all([
-      getVocabulary(),
-      getFlashcardSets(),
-    ]);
+    const [nextWords, nextSets] = await Promise.all([getVocabulary(), getFlashcardSets()]);
     if (!mounted) return;
     words.splice(0, words.length, ...nextWords);
     sets = nextSets;
@@ -264,8 +284,10 @@ export function mountVocabulary(root) {
     const button = event.target.closest("button");
     if (!button || !root.contains(button)) return;
     if (await flashcardController.handleClick(button)) return;
-    if (button.id === "vocabulary-add") openWordDialog();
-    else if (button.id === "vocabulary-cancel") closeWordDialog();
+    if (button.dataset.vocabularyPanel === "study-list") void showStudyList({ focus: true });
+    else if (button.dataset.vocabularyPanel === "add-word") setActivePanel("add-word", { focus: true });
+    else if (button.id === "vocabulary-cancel") void showStudyList({ focus: true });
+    else if (button.dataset.action === "add-first-word") openWordForm();
     else if (button.id === "create-flashcard-set") {
       const selectedWords = words.filter((word) => selectedIds.has(word.id));
       if (!selectedWords.length) return;
@@ -284,21 +306,7 @@ export function mountVocabulary(root) {
         } catch (error) { status.textContent = `Delete failed: ${error.message || "database error"}`; return; }
         await refreshAfterAction("Vocabulary items were deleted.");
       }
-    } else if (button.id === "export-vocabulary") {
-      try {
-        const blob = new Blob([buildVocabularyCsv(words)], { type: "text/csv;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `PEN501-vocabulary-${new Date().toISOString().slice(0, 10)}.csv`;
-        link.hidden = true;
-        document.body.append(link);
-        link.click();
-        link.remove();
-        window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-        status.textContent = `${words.length} vocabulary item${words.length === 1 ? "" : "s"} exported.`;
-      } catch (error) { status.textContent = `CSV export failed: ${error.message || "browser error"}`; }
-    } else if (button.dataset.action === "edit-word") openWordDialog(showWord(button.dataset.id));
+    } else if (button.dataset.action === "edit-word") openWordForm(showWord(button.dataset.id));
     else if (button.dataset.action === "delete-word") {
       const word = showWord(button.dataset.id);
       if (!word || !window.confirm(`Delete “${word.word}”? Related flashcards will be kept and unlinked.`)) return;
@@ -325,17 +333,26 @@ export function mountVocabulary(root) {
       window.clearTimeout(autosaveTimer);
       const version = draftVersion;
       setAutosaveMessage("Saving…", "saving");
+      const submitButton = byId("vocabulary-save");
+      submitButton.disabled = true;
       await saveQueue;
-      if (!mounted || version !== draftVersion) return;
+      if (!mounted || version !== draftVersion) { submitButton.disabled = false; return; }
       try {
         const result = await saveVocabularyEntry(currentFormData());
         if (!mounted || version !== draftVersion) return;
-        await closeWordDialog(false);
         status.textContent = result.activitySaved ? "Vocabulary saved." : "Vocabulary saved; its activity record could not be saved.";
+        window.clearTimeout(autosaveTimer);
+        draftVersion += 1;
+        wordForm.reset();
+        wordForm.elements.id.value = "";
+        byId("vocabulary-form-title").textContent = "Add a word";
+        submitButton.textContent = "Save word";
+        setAutosaveMessage("Enter a word, part of speech, and meaning to enable autosave.");
+        setActivePanel("study-list", { focus: true });
         await refreshAfterAction("Vocabulary was saved.");
       } catch (error) {
-        if (version === draftVersion) setAutosaveMessage(error.message || "Could not save this word.", "error");
-      }
+        setAutosaveMessage(error.message || "Could not save this word.", "error");
+      } finally { submitButton.disabled = false; }
     } else if (event.target.id === "flashcard-set-form") {
       event.preventDefault();
       const selectedWords = words.filter((word) => selectedIds.has(word.id));
@@ -346,6 +363,7 @@ export function mountVocabulary(root) {
         if (!mounted) return;
         setDialog.close();
         selectedIds.clear();
+        byId("flashcard-sets-details").open = true;
         status.textContent = `Created “${result.set.name}” with ${result.cards.length} cards.`;
         await refreshAfterAction(`Flashcard set “${result.set.name}” was created.`);
       } catch (error) {
@@ -355,8 +373,17 @@ export function mountVocabulary(root) {
     }
   }
 
+  function handleKeydown(event) {
+    if (!event.target.matches("[data-vocabulary-panel]") || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    event.preventDefault();
+    const panel = event.target.dataset.vocabularyPanel === "study-list" ? "add-word" : "study-list";
+    if (panel === "study-list") void showStudyList({ focus: true });
+    else setActivePanel(panel, { focus: true });
+  }
+
   root.addEventListener("click", handleClick, { signal });
   root.addEventListener("submit", handleSubmit, { signal });
+  root.addEventListener("keydown", handleKeydown, { signal });
   root.addEventListener("input", (event) => {
     if (event.target.id === "vocabulary-search") renderVocabularyRows();
     if (wordForm.contains(event.target)) scheduleAutosave();
@@ -378,14 +405,6 @@ export function mountVocabulary(root) {
     if (event.target.id === "import-vocabulary") void handleCsvImport(event.target.files?.[0]);
     if (wordForm.contains(event.target)) scheduleAutosave();
   }, { signal });
-  wordDialog.addEventListener("close", () => {
-    window.clearTimeout(autosaveTimer);
-    draftVersion += 1;
-  }, { signal });
-  wordDialog.addEventListener("cancel", (event) => {
-    event.preventDefault();
-    void closeWordDialog();
-  }, { signal });
 
   refreshData().catch((error) => {
     if (!mounted) return;
@@ -401,4 +420,3 @@ export function mountVocabulary(root) {
     events.abort();
   };
 }
-

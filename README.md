@@ -4,7 +4,7 @@ PEN501 is a personal English learning workspace for vocabulary, writing, and rea
 
 ## Current status
 
-Phases 0 through 2 provide the responsive application shell, versioned IndexedDB storage, JSON backup/restore, vocabulary management, CSV exchange, flashcard sets, and spaced-repetition review. Writing and Reader screens remain planned; the Dashboard shows real counts and flashcard review activity, with no sample data.
+Phases 0 through 2 provide the responsive application shell, versioned IndexedDB storage, JSON backup/restore, vocabulary management, CSV import, flashcard sets, and spaced-repetition review. Writing and Reader screens remain planned; the Dashboard shows real counts and flashcard review activity, with no sample data.
 
 ## Run locally
 
@@ -77,7 +77,7 @@ Navigation is hash-based, so it works on static hosting without server rewrite r
 
 0. Project shell, design system, navigation, theme, and dashboard — implemented.
 1. IndexedDB schema, storage service, migrations, storage status, and JSON backup/restore — implementation present; browser verification pending.
-2. Vocabulary, CSV import/export, flashcards, spaced repetition, and dashboard activity — implementation present; browser verification pending.
+2. Vocabulary, CSV import, flashcards, spaced repetition, and dashboard activity — implementation present; browser verification pending.
 3. General Writing workspace, with IELTS as an optional mode.
 4. Reader, document rendering, and annotations.
 5. Backup refinements, PWA manifest validation, and offline app shell.

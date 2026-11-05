@@ -1,4 +1,5 @@
 import { getFlashcardSets, getStudyCards, reviewFlashcard } from "../services/flashcardService.js";
+import { makePartOfSpeechChip } from "./vocabularyView.js";
 
 export function createFlashcardController({ root, onRefresh, onStatus }) {
   let session = null;
@@ -20,8 +21,24 @@ export function createFlashcardController({ root, onRefresh, onStatus }) {
     }
     stage.hidden = false;
     for (const control of controls) control.disabled = false;
+    const direction = card.direction || (card.front === card.vocabularyWord
+      ? "english-to-vietnamese"
+      : "vietnamese-to-english");
+    const englishSide = direction === "english-to-vietnamese" ? !session.flipped : session.flipped;
+    const mainContent = englishSide
+      ? (card.vocabularyWord || (direction === "english-to-vietnamese" ? card.front : card.back))
+      : (card.meaning || (direction === "english-to-vietnamese" ? card.back : card.front));
+    const partOfSpeech = byId("flashcard-face-pos");
+    const chip = makePartOfSpeechChip(card.partOfSpeech);
+    partOfSpeech.replaceWith(chip);
+    chip.id = "flashcard-face-pos";
+    chip.classList.add("flashcard-face__pos");
+    chip.hidden = !englishSide || !card.partOfSpeech;
+    byId("flashcard-face-main").textContent = mainContent || "—";
+    byId("flashcard-face-example").textContent = card.example || "";
+    byId("flashcard-face-example").hidden = !session.flipped || !card.example;
     byId("flashcard-face-label").textContent = session.flipped ? "Answer" : "Front";
-    byId("flashcard-face-content").textContent = session.flipped ? card.back : card.front;
+    byId("flashcard-face-hint").textContent = session.flipped ? "SELECT TO RETURN" : "SELECT TO FLIP";
     byId("flashcard-flip").setAttribute("aria-label", session.flipped ? "Show front of card" : "Show answer");
     byId("study-show-answer").textContent = session.flipped ? "Show front" : "Show answer";
     byId("study-progress").textContent = `${session.setName} · ${session.cards.length} remaining · ${session.reviewed} reviewed this session`;
