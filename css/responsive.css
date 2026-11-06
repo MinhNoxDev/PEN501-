@@ -44,6 +44,7 @@
   .topbar { flex-wrap: wrap; }
   .topbar__title-wrap { flex: 1; }
   .menu-toggle { font-size: 0.6875rem; }
+  .vocabulary-nav__tab { min-width: 68px; padding-inline: 4px; font-size: 0.5625rem; letter-spacing: 0.025em; }
   .theme-control { flex-direction: row; align-items: center; }
   .theme-control > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
   .topbar__eyebrow { max-width: 180px; }

@@ -4,7 +4,7 @@ PEN501 is a personal English learning workspace for vocabulary, writing, and rea
 
 ## Current status
 
-Phases 0 through 2 provide the responsive application shell, versioned IndexedDB storage, JSON backup/restore, vocabulary management, CSV import, flashcard sets, and spaced-repetition review. Writing and Reader screens remain planned; the Dashboard shows real counts and flashcard review activity, with no sample data.
+Phases 0 through 2 provide the responsive application shell, versioned IndexedDB storage, JSON backup/restore, vocabulary management, quizzes, flashcard sets, and spaced-repetition review. Writing and Reader screens remain planned; the Dashboard shows real counts and learning activity, with no sample data.
 
 ## Run locally
 
@@ -51,7 +51,7 @@ PEN501/
 
 ## Design and architecture
 
-The interface follows `voicebox-DESIGN.md`: a light editorial canvas, sharp geometry, Archivo Black headlines, Work Sans body text, Space Mono utility labels, subtle structural borders, and a restrained red accent. If Google Fonts cannot load, local system font fallbacks keep the app usable.
+The interface follows `voicebox-DESIGN.md`: a light editorial canvas, sharp geometry, Archivo Black headlines, Work Sans body text, Space Mono utility labels, subtle structural borders, and a restrained red accent. If Google Fonts cannot load, local system font fallbacks keep the app usable. Bootstrap Icons are loaded from the official versioned icon stylesheet.
 
 Navigation is hash-based, so it works on static hosting without server rewrite rules. The right-side navigation drawer can be opened or collapsed at desktop and mobile sizes. Views are separate ES modules, while `app.js` wires shared behavior. Light is the default theme; theme and motion preferences are stored in LocalStorage. Learning data uses `PEN501_DB` through the shared Storage Service; modules should not access IndexedDB directly.
 
@@ -68,6 +68,7 @@ Navigation is hash-based, so it works on static hosting without server rewrite r
 - Writing and Reader learning workflows, and the full Progress history view, are not implemented yet; their screens state this explicitly.
 - Theme preference is browser-local and does not sync between devices.
 - Google Fonts needs a network connection for the intended typefaces.
+- Bootstrap Icons use the official versioned CDN stylesheet and need a network connection to render.
 - Backup JSON encodes document Blobs as base64 and can use substantial memory for large files.
 - Backup files must match the current database version; cross-version conversion is not implemented.
 - Browser-level storage and UI verification for Phases 1 and 2 remains pending in this environment.
@@ -77,7 +78,7 @@ Navigation is hash-based, so it works on static hosting without server rewrite r
 
 0. Project shell, design system, navigation, theme, and dashboard — implemented.
 1. IndexedDB schema, storage service, migrations, storage status, and JSON backup/restore — implementation present; browser verification pending.
-2. Vocabulary, CSV import, flashcards, spaced repetition, and dashboard activity — implementation present; browser verification pending.
+2. Vocabulary, quizzes, flashcards, spaced repetition, and dashboard activity — implementation present; browser verification pending.
 3. General Writing workspace, with IELTS as an optional mode.
 4. Reader, document rendering, and annotations.
 5. Backup refinements, PWA manifest validation, and offline app shell.

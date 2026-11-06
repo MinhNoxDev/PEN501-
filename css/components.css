@@ -12,6 +12,27 @@
 
 .skip-link:focus { transform: translateY(0); }
 
+.loading-screen {
+  position: fixed;
+  z-index: 200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  opacity: 1;
+  animation: loading-fallback-hide 300ms ease 12s forwards;
+  transition: opacity 220ms ease, visibility 220ms ease;
+}
+
+.loading-screen--hidden { visibility: hidden; opacity: 0; pointer-events: none; }
+.loading-screen__content { display: grid; justify-items: center; gap: var(--space-3); text-align: center; }
+.loading-screen__logo { color: var(--color-red); font-family: var(--font-heading); font-size: clamp(2rem, 8vw, 3.5rem); letter-spacing: -0.05em; }
+.loading-screen__content p { color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; }
+.loading-screen__spinner { width: 32px; height: 32px; border: 3px solid var(--border-subtle); border-top-color: var(--color-red); border-radius: 50%; animation: loading-spin 720ms linear infinite; }
+@keyframes loading-spin { to { transform: rotate(360deg); } }
+@keyframes loading-fallback-hide { to { visibility: hidden; opacity: 0; pointer-events: none; } }
+
 .wordmark {
   display: flex;
   min-height: 72px;
@@ -24,6 +45,7 @@
 }
 
 .wordmark__name {
+  color: var(--color-red);
   font-family: var(--font-heading);
   font-size: 1.75rem;
   letter-spacing: -0.04em;
@@ -205,6 +227,7 @@ select:focus-visible {
 }
 
 .menu-toggle { display: inline-flex; }
+.menu-toggle__icon { font-size: 1.2rem; line-height: 1; }
 
 .panel {
   border: 2px solid var(--border-subtle);

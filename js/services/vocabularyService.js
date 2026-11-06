@@ -13,17 +13,44 @@ export const PARTS_OF_SPEECH = Object.freeze([
   "Other",
 ]);
 
+const POS_HINTS = Object.freeze({
+  Pronoun: new Set("i me my mine myself we us our ours you your yours he him his she her hers it its they them their theirs who whom whose which that this these those someone anyone everyone nobody something anything everything nothing each either neither all both few many some several one another".split(" ")),
+  Preposition: new Set("about above across after against along among around as at before behind below beneath beside between beyond but by despite down during except for from in inside into like near of off on onto opposite out outside over past per since through throughout till to toward under underneath until up upon via with within without".split(" ")),
+  Conjunction: new Set("and but or nor for yet so although because unless while whereas if when whenever where wherever once until than whether".split(" ")),
+  Interjection: new Set("ah aha alas bravo eek hey hi hooray oh oops ouch uh wow yay yes no".split(" ")),
+  Verb: new Set("be am is are was were been being have has had do does did go goes went gone get got make made take took come came see saw know knew think thought say said tell told give gave find found feel felt leave left put keep let begin began become became bring brought write wrote read speak spoke run ran walk work study learn teach play use want need try call ask seem help show turn start move live believe hold happen provide sit stand lose pay meet include continue set change lead understand watch follow stop create open close build break choose speak".split(" ")),
+  Adjective: new Set("good bad great big small little long short new old young happy sad easy hard high low right wrong important different early late sure able possible open-minded beautiful useful careful quick slow fast kind friendly likely lovely simple strong weak full empty ready busy".split(" ")),
+  Noun: new Set("time person year way day thing man woman child world life hand part eye place work week case point government company number group problem fact home school house family student country question word idea story money water food book language name room friend city area business service power hour game line end member law car community country".split(" ")),
+});
+
+export function suggestPartOfSpeech(value) {
+  const word = String(value ?? "").trim().toLocaleLowerCase("en-US").replace(/^[^\p{L}]+|[^\p{L}'-]+$/gu, "");
+  if (!word) return "";
+  for (const part of ["Pronoun", "Preposition", "Conjunction", "Interjection", "Verb", "Adjective", "Noun"]) {
+    if (POS_HINTS[part].has(word)) return part;
+  }
+  if (/(tion|sion|ment|ness|ity|ance|ence|ship|hood|ism|ist|er|or)$/.test(word)) return "Noun";
+  if (/(ize|ise|ify|ate)$/.test(word)) return "Verb";
+  if (/(ous|ful|less|able|ible|ive|al|ic|ish|ary|ent|ant|ed|ing)$/.test(word)) return "Adjective";
+  if (/ly$/.test(word)) return "Adverb";
+  return "Other";
+}
+
+function uppercaseVocabularyText(value) {
+  return typeof value === "string" ? value.trim().toLocaleUpperCase("vi-VN") : "";
+}
+
 export function validateVocabularyInput(input) {
   const rawPartOfSpeech = typeof input.partOfSpeech === "string" ? input.partOfSpeech.trim() : "";
   const partOfSpeech = PARTS_OF_SPEECH.find((value) => value.toLowerCase() === rawPartOfSpeech.toLowerCase()) ?? "";
   const record = {
     ...input,
-    word: typeof input.word === "string" ? input.word.trim() : "",
+    word: uppercaseVocabularyText(input.word),
     partOfSpeech,
-    meaning: typeof input.meaning === "string" ? input.meaning.trim() : "",
-    example: typeof input.example === "string" ? input.example.trim() : "",
+    meaning: uppercaseVocabularyText(input.meaning),
+    example: uppercaseVocabularyText(input.example),
     tags: Array.isArray(input.tags)
-      ? [...new Set(input.tags.map((tag) => String(tag).trim()).filter(Boolean))]
+      ? [...new Set(input.tags.map((tag) => uppercaseVocabularyText(String(tag))).filter(Boolean))]
       : [],
   };
 
@@ -51,6 +78,10 @@ async function recordActivity(activityType, activityData) {
   } catch {
     return false;
   }
+}
+
+export function recordVocabularyQuizResult(score, total) {
+  return recordActivity("vocabulary_quiz_completed", { score, total });
 }
 
 export async function saveVocabularyEntry(input) {

@@ -10,6 +10,7 @@ const menuToggle = document.getElementById("menu-toggle");
 const sidebarScrim = document.getElementById("sidebar-scrim");
 const sidebar = document.getElementById("sidebar");
 const themeSelect = document.getElementById("theme-select");
+const loadingScreen = document.getElementById("app-loading");
 const mobileLayout = window.matchMedia("(max-width: 820px)");
 let cleanupActiveView = null;
 
@@ -31,6 +32,8 @@ function syncNavigationButton() {
   menuToggle.setAttribute("aria-expanded", String(isOpen));
   menuToggle.setAttribute("aria-label", label);
   menuToggle.title = label;
+  const icon = document.getElementById("menu-toggle-icon");
+  icon.className = `bi ${isOpen ? "bi-x-lg" : "bi-list"} menu-toggle__icon`;
 }
 
 function closeNavigation(returnFocus = false) {
@@ -142,6 +145,7 @@ async function refreshDashboard() {
     }
     const labels = {
       vocabulary_added: "Vocabulary added",
+      vocabulary_quiz_completed: "Vocabulary quiz completed",
       flashcard_reviewed: "Flashcard reviewed",
       writing_completed: "Writing completed",
       document_opened: "Document opened",
@@ -155,7 +159,9 @@ async function refreshDashboard() {
         ? item.activityData.title
         : typeof item.activityData?.word === "string"
           ? item.activityData.word
-          : "";
+          : Number.isFinite(item.activityData?.score) && Number.isFinite(item.activityData?.total)
+            ? `${item.activityData.score}/${item.activityData.total}`
+            : "";
       title.textContent = `${labels[item.activityType] || String(item.activityType || "Study activity").replaceAll("_", " ")}${detail ? ` · ${detail}` : ""}`;
       const date = document.createElement("time");
       date.textContent = formatActivityDate(item.activityDate || item.createdAt);
@@ -213,17 +219,28 @@ async function handleBackupRestore(button) {
   }
 }
 
-function renderCurrentRoute() {
+async function renderCurrentRoute() {
   cleanupActiveView?.();
   cleanupActiveView = null;
   const key = renderRoute();
-  if (key === "settings") void refreshStorageStatus();
+  const pending = [];
+  if (key === "settings") pending.push(refreshStorageStatus());
   if (key === "settings") {
     const animationToggle = document.getElementById("animations-enabled");
     if (animationToggle) animationToggle.checked = appState.animationsEnabled;
   }
-  if (key === "dashboard") void refreshDashboard();
-  if (key === "vocabulary") cleanupActiveView = mountVocabulary(document.getElementById("view-content"));
+  if (key === "dashboard") pending.push(refreshDashboard());
+  if (key === "vocabulary") {
+    cleanupActiveView = mountVocabulary(document.getElementById("view-content"));
+    pending.push(cleanupActiveView.ready);
+  }
+  await Promise.allSettled(pending);
+}
+
+function hideLoadingScreen() {
+  if (!loadingScreen) return;
+  loadingScreen.classList.add("loading-screen--hidden");
+  window.setTimeout(() => { loadingScreen.hidden = true; }, 260);
 }
 
 function initializeApp() {
@@ -268,11 +285,15 @@ function initializeApp() {
   });
 
   normalizeInitialRoute();
-  renderCurrentRoute();
+  const initialRender = renderCurrentRoute();
   syncSidebarInert();
   syncNavigationButton();
+  void Promise.race([
+    Promise.all([initialRender, new Promise((resolve) => window.setTimeout(resolve, 320))]),
+    new Promise((resolve) => window.setTimeout(resolve, 8000)),
+  ]).finally(hideLoadingScreen);
   window.addEventListener("hashchange", () => {
-    renderCurrentRoute();
+    void renderCurrentRoute();
     closeNavigation();
     document.getElementById("main-content").focus({ preventScroll: true });
   });

@@ -71,7 +71,6 @@
   padding: 8px;
 }
 
-.menu-toggle svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; }
 
 @media (min-width: 821px) {
   body:not(.nav-hidden) .sidebar { transform: translateX(0); }

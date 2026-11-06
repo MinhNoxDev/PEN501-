@@ -1,9 +1,9 @@
 import {
-  deleteVocabularyEntries,
   deleteVocabularyEntry,
   getVocabulary,
-  importVocabularyCsv,
+  recordVocabularyQuizResult,
   saveVocabularyEntry,
+  suggestPartOfSpeech,
 } from "../services/vocabularyService.js";
 import {
   createFlashcardSet,
@@ -12,12 +12,12 @@ import {
 } from "../services/flashcardService.js";
 import { createFlashcardController } from "./flashcards.js";
 import { makeButton, makePartOfSpeechChip, renderWordCard, renderWordRow } from "./vocabularyView.js";
+import { speakVocabularyWord } from "../services/pronunciationService.js";
 
 export function mountVocabulary(root) {
   const events = new AbortController();
   const { signal } = events;
   const words = [];
-  const selectedIds = new Set();
   const createSelectedIds = new Set();
   let sets = [];
   let mounted = true;
@@ -25,12 +25,19 @@ export function mountVocabulary(root) {
   let autosaveTimer = null;
   let draftVersion = 0;
   let saveQueue = Promise.resolve();
+  let partOfSpeechManuallyChanged = false;
+  let quizQuestions = [];
+  let quizPosition = 0;
+  let quizScore = 0;
+  let quizAnswered = false;
+  let quizFinished = false;
 
   const byId = (id) => root.querySelector(`#${id}`);
   const status = byId("vocabulary-status");
   const studyPanel = byId("study-list-panel");
   const addPanel = byId("add-word-panel");
   const flashcardPanel = byId("flashcard-panel");
+  const quizPanel = byId("quiz-panel");
   const flashcardStatus = byId("flashcard-status");
   const wordForm = byId("vocabulary-form");
   const autoStatus = byId("vocabulary-autosave-status");
@@ -58,6 +65,7 @@ export function mountVocabulary(root) {
     studyPanel.hidden = panel !== "study-list";
     addPanel.hidden = panel !== "add-word";
     flashcardPanel.hidden = panel !== "flashcards";
+    quizPanel.hidden = panel !== "quiz";
     for (const tab of root.querySelectorAll("[data-vocabulary-panel]")) {
       const selected = tab.dataset.vocabularyPanel === panel;
       tab.setAttribute("aria-selected", String(selected));
@@ -65,7 +73,7 @@ export function mountVocabulary(root) {
     }
     if (focus) {
       if (panel === "add-word") byId("vocabulary-word").focus();
-      else byId(panel === "flashcards" ? "vocabulary-tab-flashcards" : "vocabulary-tab-study").focus();
+      else byId(`vocabulary-tab-${panel === "study-list" ? "study" : panel}`).focus();
     }
   }
 
@@ -130,6 +138,10 @@ export function mountVocabulary(root) {
     wordForm.elements.tags.value = (word?.tags ?? []).join(", ");
     byId("vocabulary-form-title").textContent = word ? "Edit a word" : "Add a word";
     byId("vocabulary-save").textContent = word ? "Save changes" : "Save word";
+    partOfSpeechManuallyChanged = Boolean(word);
+    byId("part-of-speech-suggestion").textContent = word
+      ? "Part of speech saved with this word. Change it if needed."
+      : "We'll suggest a part of speech as you type. You can change it at any time.";
     setAutosaveMessage("Enter a word, part of speech, and meaning to enable autosave.");
     setActivePanel("add-word", { focus: true });
   }
@@ -153,13 +165,7 @@ export function mountVocabulary(root) {
     return visible;
   }
 
-  function updateSelectionControls(visible) {
-    const selectedVisible = visible.filter((word) => selectedIds.has(word.id)).length;
-    byId("selection-count").textContent = `${selectedIds.size} selected`;
-    byId("visible-word-count").textContent = `${visible.length} shown`;
-    byId("delete-selected").disabled = selectedIds.size === 0;
-    byId("select-all-visible").checked = visible.length > 0 && selectedVisible === visible.length;
-    byId("select-all-visible").indeterminate = selectedVisible > 0 && selectedVisible < visible.length;
+  function updateVocabularySummary(visible) {
     byId("vocabulary-total-count").textContent = String(words.length);
     const query = byId("vocabulary-search").value.trim();
     const searchTrigger = byId("open-vocabulary-search");
@@ -179,9 +185,9 @@ export function mountVocabulary(root) {
     if (visible.length === 0) {
       const row = document.createElement("tr");
       const cell = document.createElement("td");
-      cell.colSpan = 6;
+      cell.colSpan = 5;
       cell.className = "table-empty-state";
-      cell.textContent = words.length === 0 ? "No vocabulary yet. Add a word or import a CSV to begin." : "No words match this search or filter.";
+      cell.textContent = words.length === 0 ? "No vocabulary yet. Add a word to begin." : "No words match this search or filter.";
       row.append(cell);
       body.append(row);
       const empty = document.createElement("div");
@@ -196,12 +202,11 @@ export function mountVocabulary(root) {
       mobile.append(empty);
     } else {
       for (const word of visible) {
-        const selected = selectedIds.has(word.id);
-        body.append(renderWordRow(word, selected));
-        mobile.append(renderWordCard(word, selected));
+        body.append(renderWordRow(word));
+        mobile.append(renderWordCard(word));
       }
     }
-    updateSelectionControls(visible);
+    updateVocabularySummary(visible);
     return visible;
   }
 
@@ -301,6 +306,90 @@ export function mountVocabulary(root) {
     byId("flashcard-set-name").focus();
   }
 
+  function startQuiz() {
+    const uniqueMeanings = new Set(words.map((word) => word.meaning));
+    if (words.length < 2 || uniqueMeanings.size < 2) {
+      byId("quiz-empty").textContent = "Add at least two words with different meanings to start a quiz.";
+      byId("quiz-empty").hidden = false;
+      byId("quiz-stage").hidden = true;
+      return;
+    }
+    quizQuestions = [...words].sort(() => Math.random() - 0.5).slice(0, Math.min(10, words.length));
+    quizPosition = 0;
+    quizScore = 0;
+    quizAnswered = false;
+    quizFinished = false;
+    byId("quiz-empty").hidden = true;
+    byId("quiz-stage").hidden = false;
+    root.querySelector(".quiz-question").hidden = false;
+    byId("quiz-choices").hidden = false;
+    byId("quiz-start").hidden = true;
+    byId("quiz-next").hidden = false;
+    byId("quiz-progress").textContent = `Question 1 of ${quizQuestions.length}`;
+    byId("quiz-score").textContent = `0 / ${quizQuestions.length}`;
+    renderQuizQuestion();
+  }
+
+  function renderQuizQuestion() {
+    const current = quizQuestions[quizPosition];
+    if (!current) return;
+    byId("quiz-word").textContent = current.word;
+    const pos = byId("quiz-part-of-speech");
+    pos.replaceChildren(makePartOfSpeechChip(current.partOfSpeech));
+    const distractors = words.filter((word) => word.id !== current.id && word.meaning !== current.meaning);
+    const choices = [current, ...distractors.sort(() => Math.random() - 0.5).slice(0, 3)]
+      .sort(() => Math.random() - 0.5);
+    const container = byId("quiz-choices");
+    container.replaceChildren();
+    for (const choice of choices) {
+      const button = makeButton(choice.meaning, "quiz-choice", choice.id);
+      button.classList.add("quiz-choice");
+      button.dataset.quizChoice = choice.id;
+      container.append(button);
+    }
+    quizAnswered = false;
+    byId("quiz-feedback").textContent = "";
+    byId("quiz-next").disabled = true;
+    byId("quiz-next").textContent = quizPosition === quizQuestions.length - 1 ? "Finish quiz" : "Next question";
+  }
+
+  async function answerQuiz(choiceId) {
+    if (quizAnswered || quizFinished) return;
+    quizAnswered = true;
+    const current = quizQuestions[quizPosition];
+    const correct = choiceId === current.id;
+    if (correct) quizScore += 1;
+    for (const button of byId("quiz-choices").querySelectorAll("[data-quiz-choice]")) {
+      button.disabled = true;
+      if (button.dataset.quizChoice === current.id) button.classList.add("quiz-choice--correct");
+      else if (button.dataset.quizChoice === choiceId) button.classList.add("quiz-choice--wrong");
+    }
+    byId("quiz-score").textContent = `${quizScore} / ${quizQuestions.length}`;
+    byId("quiz-feedback").textContent = correct ? "Correct." : `Not quite. The meaning is: ${current.meaning}`;
+    byId("quiz-next").disabled = false;
+  }
+
+  async function nextQuizQuestion() {
+    if (!quizAnswered || quizFinished) return;
+    if (quizPosition < quizQuestions.length - 1) {
+      quizPosition += 1;
+      byId("quiz-progress").textContent = `Question ${quizPosition + 1} of ${quizQuestions.length}`;
+      renderQuizQuestion();
+      byId("quiz-choices").querySelector("button")?.focus();
+      return;
+    }
+    quizFinished = true;
+    root.querySelector(".quiz-question").hidden = true;
+    byId("quiz-choices").hidden = true;
+    byId("quiz-start").hidden = false;
+    byId("quiz-start").textContent = "Try again";
+    byId("quiz-next").hidden = true;
+    byId("quiz-progress").textContent = "Quiz complete";
+    const saved = await recordVocabularyQuizResult(quizScore, quizQuestions.length);
+    if (!mounted) return;
+    byId("quiz-feedback").textContent = `${quizScore} / ${quizQuestions.length} correct${saved ? ". Result saved." : ". Result could not be saved to activity history."}`;
+  }
+
   async function refreshData() {
     if (!mounted) return;
     status.textContent = "Loading vocabulary from this browser…";
@@ -308,7 +397,6 @@ export function mountVocabulary(root) {
     if (!mounted) return;
     words.splice(0, words.length, ...nextWords);
     sets = nextSets;
-    for (const id of [...selectedIds]) if (!words.some((word) => word.id === id)) selectedIds.delete(id);
     status.textContent = `${words.length} word${words.length === 1 ? "" : "s"} saved in this browser.`;
     renderVocabularyRows();
     renderSetList();
@@ -335,29 +423,27 @@ export function mountVocabulary(root) {
     return words.find((word) => word.id === id);
   }
 
-  async function handleCsvImport(file) {
-    if (!file) return;
-    status.textContent = "Reading CSV…";
-    try {
-      const result = await importVocabularyCsv(await file.text());
-      if (!mounted) return;
-      const rejectedSummary = result.rejected.length ? ` ${result.rejected.length} invalid row${result.rejected.length === 1 ? "" : "s"} skipped.` : "";
-      const activitySummary = result.activitySaved ? "" : " Activity progress could not be recorded.";
-      status.textContent = `${result.imported} imported, ${result.duplicates} duplicate${result.duplicates === 1 ? "" : "s"} skipped.${rejectedSummary}${activitySummary}`;
-      if (result.rejected.length) status.textContent += ` First issue: row ${result.rejected[0].row}, ${result.rejected[0].message}`;
-      await refreshAfterAction("CSV data was imported.");
-    } catch (error) {
-      status.textContent = `CSV import failed: ${error.message || "invalid file"}`;
-    } finally {
-      if (mounted) byId("import-vocabulary").value = "";
-    }
-  }
-
   async function handleClick(event) {
     const button = event.target.closest("button");
     if (!button || !root.contains(button)) return;
     if (await flashcardController.handleClick(button)) return;
     if (button.dataset.vocabularyPanel) void showPanel(button.dataset.vocabularyPanel, { focus: true });
+    else if (button.id === "toggle-vocabulary-filters") {
+      const filters = byId("vocabulary-filter-panel");
+      filters.hidden = !filters.hidden;
+      button.setAttribute("aria-expanded", String(!filters.hidden));
+      button.setAttribute("aria-label", filters.hidden ? "Show filters and sorting" : "Hide filters and sorting");
+      if (!filters.hidden) byId("vocabulary-filter-pos").focus();
+    } else if (button.id === "add-word-from-list" || button.dataset.action === "add-first-word") openWordForm();
+    else if (button.id === "pronunciation-preview") {
+      const word = wordForm.elements.word.value;
+      if (!speakVocabularyWord(word)) setAutosaveMessage(word.trim() ? "Speech is not available in this browser." : "Enter a word to hear it spoken.", "error");
+    } else if (button.dataset.action === "pronounce-word") {
+      const word = showWord(button.dataset.id);
+      if (word && !speakVocabularyWord(word.word)) status.textContent = "Speech is not available in this browser.";
+    } else if (button.id === "quiz-start") startQuiz();
+    else if (button.id === "quiz-next") await nextQuizQuestion();
+    else if (button.dataset.action === "quiz-choice") await answerQuiz(button.dataset.id);
     else if (button.id === "open-vocabulary-search") {
       const dialog = byId("vocabulary-search-dialog");
       dialog.showModal();
@@ -368,26 +454,14 @@ export function mountVocabulary(root) {
       renderVocabularyRows();
       byId("vocabulary-search").focus();
     } else if (button.id === "vocabulary-cancel") void showPanel("study-list", { focus: true });
-    else if (button.dataset.action === "add-first-word") openWordForm();
     else if (button.id === "open-create-flashcard-set") openCreateSetDialog();
     else if (button.id === "flashcard-set-cancel" || button.id === "flashcard-set-cancel-icon") setDialog.close();
-    else if (button.id === "delete-selected") {
-      const ids = [...selectedIds];
-      if (window.confirm(`Delete ${ids.length} selected vocabulary item${ids.length === 1 ? "" : "s"}? Related flashcards will be kept and unlinked.`)) {
-        try {
-          await deleteVocabularyEntries(ids);
-          selectedIds.clear();
-          status.textContent = `${ids.length} item${ids.length === 1 ? "" : "s"} deleted.`;
-        } catch (error) { status.textContent = `Delete failed: ${error.message || "database error"}`; return; }
-        await refreshAfterAction("Vocabulary items were deleted.");
-      }
-    } else if (button.dataset.action === "edit-word") openWordForm(showWord(button.dataset.id));
+    else if (button.dataset.action === "edit-word") openWordForm(showWord(button.dataset.id));
     else if (button.dataset.action === "delete-word") {
       const word = showWord(button.dataset.id);
       if (!word || !window.confirm(`Delete “${word.word}”? Related flashcards will be kept and unlinked.`)) return;
       try {
         await deleteVocabularyEntry(word.id);
-        selectedIds.delete(word.id);
         status.textContent = `“${word.word}” deleted.`;
       } catch (error) { status.textContent = `Delete failed: ${error.message || "database error"}`; return; }
       await refreshAfterAction(`“${word.word}” was deleted.`);
@@ -422,6 +496,8 @@ export function mountVocabulary(root) {
         wordForm.elements.id.value = "";
         byId("vocabulary-form-title").textContent = "Add a word";
         submitButton.textContent = "Save word";
+        partOfSpeechManuallyChanged = false;
+        byId("part-of-speech-suggestion").textContent = "We'll suggest a part of speech as you type. You can change it at any time.";
         setAutosaveMessage("Enter a word, part of speech, and meaning to enable autosave.");
         setActivePanel("study-list", { focus: true });
         await refreshAfterAction("Vocabulary was saved.");
@@ -448,9 +524,10 @@ export function mountVocabulary(root) {
   }
 
   function handleKeydown(event) {
+    flashcardController.handleKeydown(event);
     if (!event.target.matches("[data-vocabulary-panel]") || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
     event.preventDefault();
-    const panels = ["study-list", "add-word", "flashcards"];
+    const panels = ["study-list", "add-word", "flashcards", "quiz"];
     const currentIndex = panels.indexOf(event.target.dataset.vocabularyPanel);
     const offset = event.key === "ArrowRight" ? 1 : -1;
     const panel = panels[(currentIndex + offset + panels.length) % panels.length];
@@ -463,42 +540,42 @@ export function mountVocabulary(root) {
   root.addEventListener("input", (event) => {
     if (event.target.id === "vocabulary-search") renderVocabularyRows();
     if (event.target.id === "flashcard-word-search") renderCreateWordList();
+    if (event.target.id === "vocabulary-word" && !partOfSpeechManuallyChanged) {
+      const suggestion = suggestPartOfSpeech(event.target.value);
+      wordForm.elements.partOfSpeech.value = suggestion;
+      byId("part-of-speech-suggestion").textContent = suggestion
+        ? `Suggested: ${suggestion}. You can change it if it doesn't fit.`
+        : "We'll suggest a part of speech as you type. You can change it at any time.";
+    }
     if (wordForm.contains(event.target)) scheduleAutosave();
   }, { signal });
   root.addEventListener("change", (event) => {
     if (event.target.id === "vocabulary-filter-pos" || event.target.id === "vocabulary-sort") renderVocabularyRows();
-    if (event.target.id === "select-all-visible") {
-      for (const word of sortedVisibleWords()) {
-        if (event.target.checked) selectedIds.add(word.id);
-        else selectedIds.delete(word.id);
-      }
-      renderVocabularyRows();
-    }
-    if (event.target.dataset.selectId) {
-      if (event.target.checked) selectedIds.add(event.target.dataset.selectId);
-      else selectedIds.delete(event.target.dataset.selectId);
-      renderVocabularyRows();
-    }
     if (event.target.dataset.flashcardSelectId) {
       if (event.target.checked) createSelectedIds.add(event.target.dataset.flashcardSelectId);
       else createSelectedIds.delete(event.target.dataset.flashcardSelectId);
       updateFlashcardSelectionCount();
     }
-    if (event.target.id === "import-vocabulary") void handleCsvImport(event.target.files?.[0]);
+    if (event.target.id === "vocabulary-part-of-speech") {
+      partOfSpeechManuallyChanged = true;
+      byId("part-of-speech-suggestion").textContent = `Selected: ${event.target.value}. You can change it again.`;
+    }
     if (wordForm.contains(event.target)) scheduleAutosave();
   }, { signal });
 
-  refreshData().catch((error) => {
+  const ready = refreshData().catch((error) => {
     if (!mounted) return;
     status.textContent = `Could not load vocabulary: ${error.message || "database error"}`;
     byId("flashcard-set-list").textContent = "Flashcard sets could not be loaded.";
   });
 
-  return () => {
+  const cleanup = () => {
     mounted = false;
     flashcardController.cleanup();
     window.clearTimeout(autosaveTimer);
     draftVersion += 1;
     events.abort();
   };
+  cleanup.ready = ready;
+  return cleanup;
 }

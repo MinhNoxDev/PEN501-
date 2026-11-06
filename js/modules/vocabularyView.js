@@ -15,6 +15,7 @@ export function renderVocabulary() {
         <button class="vocabulary-nav__tab" id="vocabulary-tab-study" type="button" role="tab" aria-selected="true" aria-controls="study-list-panel" data-vocabulary-panel="study-list">Study list</button>
         <button class="vocabulary-nav__tab" id="vocabulary-tab-add" type="button" role="tab" aria-selected="false" aria-controls="add-word-panel" data-vocabulary-panel="add-word" tabindex="-1">Add word</button>
         <button class="vocabulary-nav__tab" id="vocabulary-tab-flashcards" type="button" role="tab" aria-selected="false" aria-controls="flashcard-panel" data-vocabulary-panel="flashcards" tabindex="-1">Flashcards</button>
+        <button class="vocabulary-nav__tab" id="vocabulary-tab-quiz" type="button" role="tab" aria-selected="false" aria-controls="quiz-panel" data-vocabulary-panel="quiz" tabindex="-1">Quiz</button>
       </nav>
 
       <section class="vocabulary-panel" id="study-list-panel" role="tabpanel" aria-labelledby="vocabulary-tab-study">
@@ -24,11 +25,17 @@ export function renderVocabulary() {
           <article class="vocabulary-stat"><span>Study sets</span><strong id="vocabulary-set-count">0</strong></article>
         </div>
 
-        <section class="panel vocabulary-tools" aria-label="Filter the study list">
+        <div class="vocabulary-tools" aria-label="Study list tools">
           <button class="search-trigger" id="open-vocabulary-search" type="button" aria-label="Search your words" aria-haspopup="dialog" aria-controls="vocabulary-search-dialog" title="Search your words">
-            <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+            <i class="bi bi-search" aria-hidden="true"></i>
             <span class="sr-only">Search your words</span>
           </button>
+          <button class="icon-button filter-toggle" id="toggle-vocabulary-filters" type="button" aria-label="Show filters and sorting" aria-controls="vocabulary-filter-panel" aria-expanded="false" title="Filters and sorting">
+            <i class="bi bi-gear" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <section class="vocabulary-filter-panel" id="vocabulary-filter-panel" aria-label="Filter and sort the study list" hidden>
           <div class="vocabulary-tools__select">
             <label for="vocabulary-filter-pos">Part of speech</label>
             <select id="vocabulary-filter-pos" class="field-control">
@@ -46,24 +53,15 @@ export function renderVocabulary() {
           </div>
         </section>
 
-        <div class="vocabulary-toolbar">
-          <div class="vocabulary-toolbar__selection">
-            <label class="select-all-control"><input id="select-all-visible" type="checkbox"><span>Select all shown</span></label>
-            <span id="visible-word-count">0 shown</span>
-            <span id="selection-count">0 selected</span>
-          </div>
-          <div class="vocabulary-toolbar__actions">
-            <button class="button button--destructive" id="delete-selected" type="button" disabled>Delete selected</button>
-            <input id="import-vocabulary" class="csv-file-input" type="file" accept=".csv,text/csv" aria-label="Choose a vocabulary CSV file">
-            <label class="csv-file-label" for="import-vocabulary">Import CSV</label>
-          </div>
+        <div class="vocabulary-list-summary">
+          <p id="vocabulary-status" class="vocabulary-status" role="status" aria-live="polite">Loading vocabulary from this browser…</p>
+          <button class="button button--secondary button--small" id="add-word-from-list" type="button">Add a word</button>
         </div>
 
-        <p class="vocabulary-status" id="vocabulary-status" role="status" aria-live="polite">Loading vocabulary from this browser…</p>
         <div class="vocabulary-table-wrap">
           <table class="vocabulary-table">
             <thead>
-              <tr><th scope="col" class="vocabulary-table__check">Select</th><th scope="col">Word</th><th scope="col">Part of speech</th><th scope="col">Meaning</th><th scope="col">Example</th><th scope="col">Actions</th></tr>
+              <tr><th scope="col">Word</th><th scope="col">Part of speech</th><th scope="col">Meaning</th><th scope="col">Example</th><th scope="col">Actions</th></tr>
             </thead>
             <tbody id="vocabulary-rows"></tbody>
           </table>
@@ -82,11 +80,18 @@ export function renderVocabulary() {
           <div class="vocabulary-form-grid">
             <div class="form-field">
               <label for="vocabulary-word">Word *</label>
-              <input class="field-control" id="vocabulary-word" name="word" type="text" maxlength="160" required autocomplete="off">
+                <div class="vocabulary-word-input">
+                  <input class="field-control" id="vocabulary-word" name="word" type="text" maxlength="160" required autocomplete="off">
+                  <button class="icon-button pronunciation-trigger" id="pronunciation-preview" type="button" aria-label="Hear this word" title="Hear this word">
+                    <i class="bi bi-volume-up-fill" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <p class="field-hint">Pronunciation plays with the voice available in your browser.</p>
             </div>
             <div class="form-field">
               <label for="vocabulary-part-of-speech">Part of speech *</label>
-              <select class="field-control" id="vocabulary-part-of-speech" name="partOfSpeech" required><option value="">Choose one</option>${partOptions}</select>
+              <select class="field-control" id="vocabulary-part-of-speech" name="partOfSpeech" required><option value="">Type a word for a suggestion</option>${partOptions}</select>
+              <p class="field-hint" id="part-of-speech-suggestion" role="status" aria-live="polite">We'll suggest a part of speech as you type. You can change it at any time.</p>
             </div>
             <div class="form-field form-field--wide">
               <label for="vocabulary-meaning">Meaning *</label>
@@ -109,6 +114,34 @@ export function renderVocabulary() {
         </form>
       </section>
 
+      <section class="vocabulary-panel vocabulary-quiz" id="quiz-panel" role="tabpanel" aria-labelledby="vocabulary-tab-quiz" hidden>
+        <header class="flashcard-library__header">
+          <div>
+            <p class="eyebrow">Vocabulary / Quick practice</p>
+            <h3>Meaning quiz</h3>
+            <p>Choose the meaning that matches the word.</p>
+          </div>
+          <div class="quiz-summary">
+            <span id="quiz-progress">Ready to start</span>
+            <strong id="quiz-score">0 / 0</strong>
+          </div>
+        </header>
+        <div class="quiz-stage" id="quiz-stage" hidden>
+          <article class="quiz-question">
+            <p class="eyebrow">What does this word mean?</p>
+            <h4 id="quiz-word"></h4>
+            <div id="quiz-part-of-speech"></div>
+          </article>
+          <div class="quiz-choices" id="quiz-choices" aria-label="Answer choices"></div>
+          <p class="quiz-feedback" id="quiz-feedback" role="status" aria-live="polite"></p>
+        </div>
+        <p class="quiz-empty" id="quiz-empty" hidden>Add at least two words with meanings to start a quiz.</p>
+        <div class="quiz-actions">
+          <button class="button button--primary" id="quiz-start" type="button">Start quiz</button>
+          <button class="button button--secondary" id="quiz-next" type="button" disabled hidden>Next question</button>
+        </div>
+      </section>
+
       <section class="vocabulary-panel flashcard-library" id="flashcard-panel" role="tabpanel" aria-labelledby="vocabulary-tab-flashcards" hidden>
         <header class="flashcard-library__header">
           <div>
@@ -119,7 +152,7 @@ export function renderVocabulary() {
           <div class="flashcard-library__actions">
             <button class="button button--secondary" id="study-due-all" type="button" disabled>Study due (0)</button>
             <button class="button button--primary" id="open-create-flashcard-set" type="button" aria-label="Create a flashcard set">
-              <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M12 4v16M4 12h16"/></svg>
+              <i class="bi bi-plus-lg" aria-hidden="true"></i>
               <span>Create set</span>
             </button>
           </div>
@@ -161,6 +194,7 @@ export function renderVocabulary() {
         <button class="button button--secondary" id="study-close" type="button">Back to flashcards</button>
       </header>
       <p class="study-progress" id="study-progress" role="status" aria-live="polite"></p>
+      <p class="study-shortcuts"><kbd>Space</kbd> flip card <span aria-hidden="true">·</span> <kbd>Enter</kbd> next card</p>
       <div class="flashcard-stage" id="flashcard-stage">
         <button class="flashcard-face" id="flashcard-flip" type="button" aria-label="Show answer">
           <span class="flashcard-face__label" id="flashcard-face-label">Front</span>
@@ -173,15 +207,14 @@ export function renderVocabulary() {
         </button>
       </div>
       <div class="flashcard-controls">
+        <button class="button button--secondary" id="study-pronounce" type="button" aria-label="Play word pronunciation" title="Play word pronunciation"><i class="bi bi-volume-up-fill" aria-hidden="true"></i><span>Listen</span></button>
         <button class="button button--secondary" id="study-previous" type="button">Previous</button>
         <button class="button button--secondary" id="study-next" type="button">Next</button>
         <button class="button button--secondary" id="study-shuffle" type="button">Shuffle</button>
         <button class="button button--secondary" id="study-restart" type="button">Restart remaining</button>
-        <button class="button button--primary" id="study-show-answer" type="button">Show answer</button>
       </div>
       <div class="flashcard-rating">
-        <button class="button button--secondary" id="study-dont-know" type="button">Don't know · Review tomorrow</button>
-        <button class="button button--primary" id="study-know" type="button">Know · Schedule next review</button>
+        <button class="button button--primary" id="study-done" type="button">Đã học xong</button>
       </div>
       <p class="study-message" id="study-message" role="status" aria-live="polite"></p>
     </section>
@@ -245,32 +278,30 @@ function addCell(row, text, className = "") {
   return cell;
 }
 
-function makeSelectionControl(word, checked, className = "") {
-  const input = document.createElement("input");
-  input.type = "checkbox";
-  input.className = className;
-  input.dataset.selectId = word.id;
-  input.checked = checked;
-  input.setAttribute("aria-label", `Select ${word.word}`);
-  return input;
-}
-
 function makeWordActions(word) {
   const wrapper = document.createElement("div");
   wrapper.className = "row-actions";
+  const listen = document.createElement("button");
+  listen.type = "button";
+  listen.className = "icon-button pronunciation-trigger";
+  listen.dataset.action = "pronounce-word";
+  listen.dataset.id = word.id;
+  listen.setAttribute("aria-label", `Play pronunciation for ${word.word}`);
+  listen.title = `Play pronunciation for ${word.word}`;
+  const icon = document.createElement("i");
+  icon.className = "bi bi-volume-up-fill";
+  icon.setAttribute("aria-hidden", "true");
   wrapper.append(
+    listen,
     makeButton("Edit", "edit-word", word.id),
     makeButton("Delete", "delete-word", word.id, "destructive"),
   );
+  listen.append(icon);
   return wrapper;
 }
 
-export function renderWordRow(word, selected) {
+export function renderWordRow(word) {
   const row = document.createElement("tr");
-  const checkCell = document.createElement("td");
-  checkCell.className = "vocabulary-table__check";
-  checkCell.append(makeSelectionControl(word, selected));
-  row.append(checkCell);
   const wordCell = addCell(row, word.word, "vocabulary-word-cell");
   if (word.tags?.length) {
     const tags = document.createElement("small");
@@ -280,22 +311,21 @@ export function renderWordRow(word, selected) {
   }
   const posCell = addCell(row, "", "vocabulary-pos-cell");
   posCell.append(makePartOfSpeechChip(word.partOfSpeech));
-  addCell(row, word.meaning);
-  addCell(row, word.example || "—");
+  addCell(row, word.meaning, "vocabulary-meaning-cell");
+  addCell(row, word.example || "—", "vocabulary-example-cell");
   const actions = document.createElement("td");
   actions.append(makeWordActions(word));
   row.append(actions);
   return row;
 }
 
-export function renderWordCard(word, selected) {
+export function renderWordCard(word) {
   const card = document.createElement("article");
   card.className = "vocabulary-card";
   const header = document.createElement("header");
-  const select = makeSelectionControl(word, selected, "vocabulary-card__check");
   const title = document.createElement("h3");
   title.textContent = word.word;
-  header.append(select, title, makePartOfSpeechChip(word.partOfSpeech));
+  header.append(title, makePartOfSpeechChip(word.partOfSpeech));
   card.append(header);
   const meaning = document.createElement("p");
   meaning.className = "vocabulary-card__meaning";

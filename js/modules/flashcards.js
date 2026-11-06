@@ -1,5 +1,6 @@
 import { getFlashcardSets, getStudyCards, reviewFlashcard } from "../services/flashcardService.js";
 import { makePartOfSpeechChip } from "./vocabularyView.js";
+import { speakVocabularyWord } from "../services/pronunciationService.js";
 
 export function createFlashcardController({ root, onRefresh, onStatus }) {
   let session = null;
@@ -11,12 +12,12 @@ export function createFlashcardController({ root, onRefresh, onStatus }) {
     const card = session?.cards[session.position];
     const stage = byId("flashcard-stage");
     const message = byId("study-message");
-    const controls = root.querySelectorAll("#study-previous, #study-next, #study-shuffle, #study-restart, #study-show-answer, #study-dont-know, #study-know, #flashcard-flip");
+    const controls = root.querySelectorAll("#study-pronounce, #study-previous, #study-next, #study-shuffle, #study-restart, #study-done, #flashcard-flip");
     if (!card) {
       stage.hidden = true;
       for (const control of controls) control.disabled = true;
-      byId("study-progress").textContent = `${session?.reviewed ?? 0} card${session?.reviewed === 1 ? "" : "s"} reviewed. This session is complete.`;
-      message.textContent = "New review dates have been saved. Your next cards will appear when they are due.";
+      byId("study-progress").textContent = `${session?.reviewed ?? 0} card${session?.reviewed === 1 ? "" : "s"} completed. This session is complete.`;
+      message.textContent = "Your completed cards have been scheduled for review.";
       return;
     }
     stage.hidden = false;
@@ -24,10 +25,10 @@ export function createFlashcardController({ root, onRefresh, onStatus }) {
     const direction = card.direction || (card.front === card.vocabularyWord
       ? "english-to-vietnamese"
       : "vietnamese-to-english");
-    const englishSide = direction === "english-to-vietnamese" ? !session.flipped : session.flipped;
-    const mainContent = englishSide
-      ? (card.vocabularyWord || (direction === "english-to-vietnamese" ? card.front : card.back))
-      : (card.meaning || (direction === "english-to-vietnamese" ? card.back : card.front));
+    const englishSide = !session.flipped;
+    const vocabularyWord = card.vocabularyWord || (direction === "english-to-vietnamese" ? card.front : card.back);
+    const meaning = card.meaning || (direction === "english-to-vietnamese" ? card.back : card.front);
+    const mainContent = englishSide ? vocabularyWord : meaning;
     const partOfSpeech = byId("flashcard-face-pos");
     const chip = makePartOfSpeechChip(card.partOfSpeech);
     partOfSpeech.replaceWith(chip);
@@ -38,10 +39,9 @@ export function createFlashcardController({ root, onRefresh, onStatus }) {
     byId("flashcard-face-example").textContent = card.example || "";
     byId("flashcard-face-example").hidden = !session.flipped || !card.example;
     byId("flashcard-face-label").textContent = session.flipped ? "Answer" : "Front";
-    byId("flashcard-face-hint").textContent = session.flipped ? "SELECT TO RETURN" : "SELECT TO FLIP";
+    byId("flashcard-face-hint").textContent = session.flipped ? "SPACE TO RETURN" : "SPACE TO FLIP · ENTER FOR NEXT";
     byId("flashcard-flip").setAttribute("aria-label", session.flipped ? "Show front of card" : "Show answer");
-    byId("study-show-answer").textContent = session.flipped ? "Show front" : "Show answer";
-    byId("study-progress").textContent = `${session.setName} · ${session.cards.length} remaining · ${session.reviewed} reviewed this session`;
+    byId("study-progress").textContent = `${session.setName} · ${session.cards.length} remaining · ${session.reviewed} completed this session`;
     byId("study-previous").disabled = session.position === 0;
     byId("study-next").disabled = session.position >= session.cards.length - 1;
     byId("study-shuffle").disabled = session.cards.length < 2;
@@ -85,21 +85,20 @@ export function createFlashcardController({ root, onRefresh, onStatus }) {
     renderCard();
   }
 
-  async function rateCard(knowsAnswer) {
+  async function markCardDone() {
     if (reviewInProgress || !session?.cards[session.position]) return;
     reviewInProgress = true;
     const card = session.cards[session.position];
-    byId("study-know").disabled = true;
-    byId("study-dont-know").disabled = true;
+    byId("study-done").disabled = true;
     byId("study-close").disabled = true;
     try {
-      const result = await reviewFlashcard(card, knowsAnswer);
+      const result = await reviewFlashcard(card, true);
       if (!mounted) return;
       session.cards.splice(session.position, 1);
       session.reviewed += 1;
       if (session.position >= session.cards.length) session.position = 0;
       session.flipped = false;
-      session.lastMessage = result.activitySaved ? "Review saved." : "Review saved, but the activity record could not be saved.";
+      session.lastMessage = result.activitySaved ? "Marked as completed and scheduled for review." : "Card was scheduled, but its activity record could not be saved.";
       renderCard();
       try {
         await onRefresh();
@@ -109,7 +108,7 @@ export function createFlashcardController({ root, onRefresh, onStatus }) {
       }
     } catch (error) {
       if (!mounted) return;
-      session.lastMessage = `Review could not be saved: ${error.message || "database error"}`;
+      session.lastMessage = `Card could not be marked complete: ${error.message || "database error"}`;
       renderCard();
     } finally {
       reviewInProgress = false;
@@ -147,6 +146,31 @@ export function createFlashcardController({ root, onRefresh, onStatus }) {
     }
   }
 
+  function nextCard() {
+    if (!session) return;
+    if (session.position >= session.cards.length - 1) {
+      session.lastMessage = "This is the last card. Mark it done or go to a previous card.";
+      renderCard();
+      return;
+    }
+    session.position += 1;
+    session.flipped = false;
+    renderCard();
+  }
+
+  function handleKeydown(event) {
+    if (!session || event.altKey || event.ctrlKey || event.metaKey || event.target.closest("input, textarea, select, dialog")) return;
+    if (event.code === "Space" || event.key === " ") {
+      event.preventDefault();
+      flipCard();
+      return;
+    }
+    if (event.key === "Enter" && (event.target.id === "flashcard-flip" || event.target.id === "study-heading" || !event.target.closest("button"))) {
+      event.preventDefault();
+      nextCard();
+    }
+  }
+
   async function handleClick(button) {
     if (button.id === "study-due-all") await startStudy();
     else if (button.dataset.action === "study-set-due") await startStudy(button.dataset.id);
@@ -157,19 +181,26 @@ export function createFlashcardController({ root, onRefresh, onStatus }) {
       byId("vocabulary-page").hidden = false;
       try { await onRefresh(); }
       catch (error) { onStatus(`Vocabulary view could not refresh: ${error.message || "database error"}`); }
-    } else if (button.id === "flashcard-flip" || button.id === "study-show-answer") flipCard();
+    } else if (button.id === "flashcard-flip") flipCard();
+    else if (button.id === "study-pronounce") {
+      const card = session?.cards[session.position];
+      if (card && !speakVocabularyWord(card.vocabularyWord)) {
+        session.lastMessage = "Speech is not available in this browser.";
+        renderCard();
+      }
+    }
     else if (button.id === "study-previous" && session?.position > 0) { session.position -= 1; session.flipped = false; renderCard(); }
-    else if (button.id === "study-next" && session && session.position < session.cards.length - 1) { session.position += 1; session.flipped = false; renderCard(); }
+    else if (button.id === "study-next") nextCard();
     else if (button.id === "study-shuffle") shuffleCards();
     else if (button.id === "study-restart") await restartStudy();
-    else if (button.id === "study-know") await rateCard(true);
-    else if (button.id === "study-dont-know") await rateCard(false);
+    else if (button.id === "study-done") await markCardDone();
     else return false;
     return true;
   }
 
   return {
     handleClick,
+    handleKeydown,
     cleanup() { mounted = false; },
   };
 }
