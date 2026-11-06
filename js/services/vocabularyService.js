@@ -49,6 +49,7 @@ export function validateVocabularyInput(input) {
     partOfSpeech,
     meaning: uppercaseVocabularyText(input.meaning),
     example: uppercaseVocabularyText(input.example),
+    pronunciation: typeof input.pronunciation === "string" ? input.pronunciation.trim() : "",
     tags: Array.isArray(input.tags)
       ? [...new Set(input.tags.map((tag) => uppercaseVocabularyText(String(tag))).filter(Boolean))]
       : [],

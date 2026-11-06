@@ -3,6 +3,7 @@ export const APP_CONFIG = Object.freeze({
   version: "0.2.0",
   themeStorageKey: "pen501.theme",
   animationStorageKey: "pen501.animations",
+  wordSuggestionsStorageKey: "pen501.wordSuggestions",
   defaultRoute: "dashboard",
 });
 

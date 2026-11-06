@@ -25,6 +25,14 @@ export function renderSettings() {
             <span>Enable animations</span>
           </label>
         </section>
+        <section class="settings-item" aria-labelledby="settings-suggestions-title">
+          <h3 id="settings-suggestions-title">Vocabulary suggestions</h3>
+          <p>Show words already in your Study list while you type in Add word. Dictionary lookups for phonetics and examples remain available.</p>
+          <label class="preference-toggle" for="word-suggestions-enabled">
+            <input id="word-suggestions-enabled" type="checkbox" checked>
+            <span>Suggest saved words</span>
+          </label>
+        </section>
         <section class="settings-item" aria-labelledby="settings-storage-title">
           <h3 id="settings-storage-title">Local storage</h3>
           <p>PEN501 keeps learning data in this browser. It does not sync to another device.</p>

@@ -203,8 +203,7 @@
 }
 
 .vocabulary-table th {
-  position: sticky;
-  top: 112px;
+  position: static;
   background: var(--surface-base);
   font-family: var(--font-mono);
   font-size: 0.625rem;
@@ -215,9 +214,11 @@
 .vocabulary-table tbody tr:hover { background: var(--surface-input); }
 .vocabulary-table td { font-size: 0.875rem; line-height: 1.5; }
 .vocabulary-word-cell { min-width: 140px; font-weight: 700; overflow-wrap: anywhere; }
-.vocabulary-table td:nth-child(3),
-.vocabulary-table td:nth-child(4) { min-width: 180px; }
+.vocabulary-table td:nth-child(4),
+.vocabulary-table td:nth-child(5) { min-width: 180px; }
 .vocabulary-pos-cell { min-width: 130px; }
+.vocabulary-phonetic { min-width: 130px; font-family: var(--font-mono); font-size: 0.8125rem; letter-spacing: 0; text-transform: none !important; overflow-wrap: anywhere; }
+.vocabulary-card > .vocabulary-phonetic { margin-top: var(--space-1); color: var(--text-secondary); }
 
 .part-of-speech-chip {
   display: inline-flex;
@@ -353,12 +354,21 @@
 .form-field--wide { grid-column: 1 / -1; }
 .form-field .field-control { min-height: 48px; font-family: var(--font-body); font-size: 1rem; }
 .vocabulary-form .field-control { text-transform: uppercase; }
+.vocabulary-form .vocabulary-phonetic-input { font-family: var(--font-mono); text-transform: none; }
 .form-field textarea.field-control { min-height: 110px; resize: vertical; }
 .label-hint { font-family: var(--font-body); font-size: 0.6875rem; font-weight: 400; letter-spacing: 0; text-transform: none; }
 .field-hint { margin-top: var(--space-1); color: var(--text-secondary); font-size: 0.8125rem; }
 .vocabulary-word-input { display: flex; min-width: 0; align-items: stretch; gap: var(--space-1); }
 .vocabulary-word-input .field-control { min-width: 0; flex: 1; }
 .pronunciation-trigger { flex: 0 0 48px; width: 48px; min-width: 48px; height: 48px; }
+.word-suggestions { display: grid; margin-top: 6px; border: 1px solid var(--border-subtle); }
+.word-suggestions[hidden] { display: none !important; }
+.word-suggestion-option { display: grid; gap: 3px; border: 0; border-bottom: 1px solid var(--border-subtle); background: var(--surface-base); color: var(--text-primary); padding: 10px 12px; text-align: left; cursor: pointer; }
+.word-suggestion-option:last-child { border-bottom: 0; }
+.word-suggestion-option:hover, .word-suggestion-option:focus-visible { background: var(--surface-muted); }
+.word-suggestion-option strong { font-size: 0.8125rem; }
+.word-suggestion-option span { color: var(--text-secondary); font-size: 0.75rem; overflow-wrap: anywhere; }
+.dictionary-lookup-status { min-height: 1em; }
 
 .autosave-status,
 .flashcard-set-selection {
@@ -456,16 +466,23 @@
 .flashcard-face__hint { align-self: flex-start; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .flashcard-face__content { display: grid; width: 100%; min-width: 0; flex: 1; align-content: center; justify-items: center; gap: var(--space-3); margin-block: auto; }
 .flashcard-face__main { display: block; max-width: 100%; overflow-wrap: anywhere; hyphens: auto; font-family: var(--font-heading); font-size: clamp(1.75rem, 5vw, 4rem); line-height: 1.12; text-transform: uppercase; }
+.flashcard-face__pronunciation { max-width: 100%; color: var(--text-secondary); font-family: var(--font-mono); font-size: clamp(0.875rem, 2.2vw, 1.25rem); letter-spacing: 0; text-transform: none; overflow-wrap: anywhere; }
 .flashcard-face__pos { font-family: var(--font-mono); }
 .flashcard-face__example { max-width: 680px; overflow-wrap: anywhere; border-top: 2px solid currentColor; padding-top: var(--space-2); font-family: var(--font-body); font-size: clamp(0.9375rem, 2vw, 1.125rem); line-height: 1.5; }
 .flashcard-controls { justify-content: center; margin-top: var(--space-3); }
-.flashcard-controls #study-pronounce { gap: var(--space-1); }
-.flashcard-controls #study-pronounce i { font-size: 1rem; }
+.flashcard-controls #study-pronounce,
+.flashcard-controls #study-pronunciation-check { gap: var(--space-1); }
+.flashcard-controls #study-pronounce i,
+.flashcard-controls #study-pronunciation-check i { font-size: 1rem; }
+.pronunciation-check-feedback { max-width: 760px; min-height: 24px; margin: var(--space-2) auto 0; color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.6875rem; line-height: 1.6; text-align: center; overflow-wrap: anywhere; }
+.pronunciation-check-note { margin-top: var(--space-2); text-align: center; }
 .flashcard-rating { justify-content: center; margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3); }
 .study-message { min-height: 24px; margin-top: var(--space-2); font-family: var(--font-mono); font-size: 0.6875rem; text-align: center; }
 
 .quiz-summary { display: grid; justify-items: end; gap: var(--space-1); font-family: var(--font-mono); font-size: 0.75rem; }
 .quiz-summary strong { color: var(--color-red); font-family: var(--font-heading); font-size: 1.5rem; }
+.quiz-timer { color: var(--text-primary); font-weight: 700; font-variant-numeric: tabular-nums; }
+.quiz-timer[data-urgent="true"] { color: var(--color-red); }
 .quiz-stage { max-width: 900px; margin: var(--space-4) auto 0; }
 .quiz-stage[hidden] { display: none !important; }
 .quiz-question { border: 2px solid var(--border-subtle); padding: clamp(18px, 4vw, 32px); text-align: center; }
@@ -503,6 +520,7 @@
   .vocabulary-card > header { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); align-items: start; }
   .vocabulary-card > header h3 { min-width: 0; grid-column: 1; font-size: 1.375rem; overflow-wrap: anywhere; }
   .vocabulary-card > header .part-of-speech-chip { grid-column: 2; justify-self: end; }
+  .vocabulary-card > .vocabulary-phonetic { grid-column: 1 / -1; }
   .vocabulary-card__meaning { min-width: 0; margin-top: var(--space-3); font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
   .vocabulary-card__example { min-width: 0; margin-top: var(--space-2); border-left: var(--border-thick) solid var(--border-color); padding-left: var(--space-2); font-size: 0.875rem; overflow-wrap: anywhere; }
   .vocabulary-card .row-actions { margin-top: var(--space-3); }

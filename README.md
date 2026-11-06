@@ -38,6 +38,7 @@ PEN501/
 │   │   ├── vocabularyView.js, flashcards.js
 │   ├── services/
 │   │   ├── backupService.js
+│   │   ├── dictionaryService.js
 │   │   ├── flashcardService.js
 │   │   └── vocabularyService.js
 │   └── utils/
@@ -71,6 +72,8 @@ Navigation is hash-based, so it works on static hosting without server rewrite r
 - Bootstrap Icons use the official versioned CDN stylesheet and need a network connection to render.
 - Backup JSON encodes document Blobs as base64 and can use substantial memory for large files.
 - Backup files must match the current database version; cross-version conversion is not implemented.
+- IPA and example suggestions use the public Free Dictionary API when a word is typed, so dictionary lookup needs a network connection and sends that word to the service. Manual entries remain available.
+- Pronunciation checks use the browser's Web Speech recognition when the user starts a check. The score is an approximate transcript-to-spelling match, not phoneme-level AI feedback; browser support varies.
 - Browser-level storage and UI verification for Phases 1 and 2 remains pending in this environment.
 - No service worker, offline cache, or AI integration exists yet.
 

@@ -61,7 +61,7 @@ export function renderVocabulary() {
         <div class="vocabulary-table-wrap">
           <table class="vocabulary-table">
             <thead>
-              <tr><th scope="col">Word</th><th scope="col">Part of speech</th><th scope="col">Meaning</th><th scope="col">Example</th><th scope="col">Actions</th></tr>
+              <tr><th scope="col">Word</th><th scope="col">IPA</th><th scope="col">Part of speech</th><th scope="col">Meaning</th><th scope="col">Example</th><th scope="col">Actions</th></tr>
             </thead>
             <tbody id="vocabulary-rows"></tbody>
           </table>
@@ -73,7 +73,7 @@ export function renderVocabulary() {
         <header class="vocabulary-add-heading">
           <p class="eyebrow">Vocabulary record</p>
           <h3 id="vocabulary-form-title">Add a word</h3>
-          <p>Add the meaning and part of speech. Complete words save automatically in this browser.</p>
+          <p>Add a word, meaning, and part of speech. PEN501 sends the word to the public Free Dictionary API to look up IPA and an example; edit any suggestion before saving.</p>
         </header>
         <form id="vocabulary-form" class="vocabulary-form" novalidate>
           <input type="hidden" name="id">
@@ -81,17 +81,23 @@ export function renderVocabulary() {
             <div class="form-field">
               <label for="vocabulary-word">Word *</label>
                 <div class="vocabulary-word-input">
-                  <input class="field-control" id="vocabulary-word" name="word" type="text" maxlength="160" required autocomplete="off">
+                  <input class="field-control" id="vocabulary-word" name="word" type="text" maxlength="160" required autocomplete="off" aria-autocomplete="list" aria-controls="vocabulary-word-suggestions" aria-expanded="false">
                   <button class="icon-button pronunciation-trigger" id="pronunciation-preview" type="button" aria-label="Hear this word" title="Hear this word">
                     <i class="bi bi-volume-up-fill" aria-hidden="true"></i>
                   </button>
                 </div>
+                <div class="word-suggestions" id="vocabulary-word-suggestions" role="listbox" aria-label="Saved word suggestions" hidden></div>
                 <p class="field-hint">Pronunciation plays with the voice available in your browser.</p>
+                <p class="field-hint dictionary-lookup-status" id="dictionary-lookup-status" role="status" aria-live="polite"></p>
             </div>
             <div class="form-field">
               <label for="vocabulary-part-of-speech">Part of speech *</label>
               <select class="field-control" id="vocabulary-part-of-speech" name="partOfSpeech" required><option value="">Type a word for a suggestion</option>${partOptions}</select>
               <p class="field-hint" id="part-of-speech-suggestion" role="status" aria-live="polite">We'll suggest a part of speech as you type. You can change it at any time.</p>
+            </div>
+            <div class="form-field form-field--wide">
+              <label for="vocabulary-pronunciation">International phonetic (IPA) <span class="label-hint">Editable</span></label>
+              <input class="field-control vocabulary-phonetic-input" id="vocabulary-pronunciation" name="pronunciation" type="text" maxlength="300" autocomplete="off" placeholder="e.g. /kəmˈpəʊnənt/">
             </div>
             <div class="form-field form-field--wide">
               <label for="vocabulary-meaning">Meaning *</label>
@@ -119,11 +125,12 @@ export function renderVocabulary() {
           <div>
             <p class="eyebrow">Vocabulary / Quick practice</p>
             <h3>Meaning quiz</h3>
-            <p>Choose the meaning that matches the word.</p>
+            <p>Choose the meaning that matches the word. You have 15 seconds per question.</p>
           </div>
           <div class="quiz-summary">
             <span id="quiz-progress">Ready to start</span>
             <strong id="quiz-score">0 / 0</strong>
+            <span class="quiz-timer" id="quiz-timer" aria-live="off">00:15</span>
           </div>
         </header>
         <div class="quiz-stage" id="quiz-stage" hidden>
@@ -200,6 +207,7 @@ export function renderVocabulary() {
           <span class="flashcard-face__label" id="flashcard-face-label">Front</span>
           <span class="flashcard-face__content">
             <span class="flashcard-face__main" id="flashcard-face-main"></span>
+            <span class="flashcard-face__pronunciation" id="flashcard-face-pronunciation" hidden></span>
             <span class="part-of-speech-chip flashcard-face__pos" id="flashcard-face-pos" hidden></span>
             <span class="flashcard-face__example" id="flashcard-face-example" hidden></span>
           </span>
@@ -208,11 +216,14 @@ export function renderVocabulary() {
       </div>
       <div class="flashcard-controls">
         <button class="button button--secondary" id="study-pronounce" type="button" aria-label="Play word pronunciation" title="Play word pronunciation"><i class="bi bi-volume-up-fill" aria-hidden="true"></i><span>Listen</span></button>
+        <button class="button button--secondary" id="study-pronunciation-check" type="button" aria-label="Check pronunciation with microphone"><i class="bi bi-mic-fill" aria-hidden="true"></i><span>Check pronunciation</span></button>
         <button class="button button--secondary" id="study-previous" type="button">Previous</button>
         <button class="button button--secondary" id="study-next" type="button">Next</button>
         <button class="button button--secondary" id="study-shuffle" type="button">Shuffle</button>
         <button class="button button--secondary" id="study-restart" type="button">Restart remaining</button>
       </div>
+      <p class="field-hint pronunciation-check-note">Browser recognition may use its own online service. PEN501 does not store microphone audio.</p>
+      <p class="pronunciation-check-feedback" id="study-pronunciation-feedback" role="status" aria-live="polite"></p>
       <div class="flashcard-rating">
         <button class="button button--primary" id="study-done" type="button">Đã học xong</button>
       </div>
@@ -309,8 +320,11 @@ export function renderWordRow(word) {
     tags.textContent = word.tags.join(" · ");
     wordCell.append(tags);
   }
-  const posCell = addCell(row, "", "vocabulary-pos-cell");
+  addCell(row, word.pronunciation || "—", "vocabulary-phonetic");
+  const posCell = document.createElement("td");
+  posCell.className = "vocabulary-pos-cell";
   posCell.append(makePartOfSpeechChip(word.partOfSpeech));
+  row.append(posCell);
   addCell(row, word.meaning, "vocabulary-meaning-cell");
   addCell(row, word.example || "—", "vocabulary-example-cell");
   const actions = document.createElement("td");
@@ -327,6 +341,12 @@ export function renderWordCard(word) {
   title.textContent = word.word;
   header.append(title, makePartOfSpeechChip(word.partOfSpeech));
   card.append(header);
+  if (word.pronunciation) {
+    const phonetic = document.createElement("p");
+    phonetic.className = "vocabulary-phonetic";
+    phonetic.textContent = word.pronunciation;
+    card.append(phonetic);
+  }
   const meaning = document.createElement("p");
   meaning.className = "vocabulary-card__meaning";
   meaning.textContent = word.meaning;

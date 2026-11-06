@@ -13,6 +13,8 @@ import {
 import { createFlashcardController } from "./flashcards.js";
 import { makeButton, makePartOfSpeechChip, renderWordCard, renderWordRow } from "./vocabularyView.js";
 import { speakVocabularyWord } from "../services/pronunciationService.js";
+import { lookupEnglishWord } from "../services/dictionaryService.js";
+import { appState } from "../state.js";
 
 export function mountVocabulary(root) {
   const events = new AbortController();
@@ -31,6 +33,15 @@ export function mountVocabulary(root) {
   let quizScore = 0;
   let quizAnswered = false;
   let quizFinished = false;
+  let quizTimerInterval = null;
+  let quizDeadline = 0;
+  let quizAudioContext = null;
+  let dictionaryTimer = null;
+  let dictionaryController = null;
+  let autoPronunciation = "";
+  let autoExample = "";
+  let pronunciationEdited = false;
+  let exampleEdited = false;
 
   const byId = (id) => root.querySelector(`#${id}`);
   const status = byId("vocabulary-status");
@@ -51,6 +62,7 @@ export function mountVocabulary(root) {
       partOfSpeech: form.get("partOfSpeech"),
       meaning: form.get("meaning"),
       example: form.get("example"),
+      pronunciation: form.get("pronunciation"),
       tags: String(form.get("tags") || "").split(",").map((tag) => tag.trim()).filter(Boolean),
     };
   }
@@ -128,6 +140,8 @@ export function mountVocabulary(root) {
 
   function openWordForm(word = null) {
     window.clearTimeout(autosaveTimer);
+    window.clearTimeout(dictionaryTimer);
+    dictionaryController?.abort();
     draftVersion += 1;
     wordForm.reset();
     wordForm.elements.id.value = word?.id ?? "";
@@ -135,7 +149,15 @@ export function mountVocabulary(root) {
     wordForm.elements.partOfSpeech.value = word?.partOfSpeech ?? "";
     wordForm.elements.meaning.value = word?.meaning ?? "";
     wordForm.elements.example.value = word?.example ?? "";
+    wordForm.elements.pronunciation.value = word?.pronunciation ?? "";
     wordForm.elements.tags.value = (word?.tags ?? []).join(", ");
+    autoPronunciation = "";
+    autoExample = "";
+    pronunciationEdited = false;
+    exampleEdited = false;
+    byId("vocabulary-word-suggestions").hidden = true;
+    byId("vocabulary-word").setAttribute("aria-expanded", "false");
+    byId("dictionary-lookup-status").textContent = "";
     byId("vocabulary-form-title").textContent = word ? "Edit a word" : "Add a word";
     byId("vocabulary-save").textContent = word ? "Save changes" : "Save word";
     partOfSpeechManuallyChanged = Boolean(word);
@@ -144,6 +166,81 @@ export function mountVocabulary(root) {
       : "We'll suggest a part of speech as you type. You can change it at any time.";
     setAutosaveMessage("Enter a word, part of speech, and meaning to enable autosave.");
     setActivePanel("add-word", { focus: true });
+    if (word && (!word.pronunciation || !word.example)) queueDictionaryLookup(word.word);
+  }
+
+  function renderWordSuggestions(value) {
+    const panel = byId("vocabulary-word-suggestions");
+    panel.replaceChildren();
+    const query = String(value ?? "").trim().toLocaleUpperCase("vi-VN");
+    const matches = appState.wordSuggestionsEnabled && query.length >= 2
+      ? words.filter((word) => word.word.startsWith(query)).slice(0, 5)
+      : [];
+    if (!matches.length) {
+      panel.hidden = true;
+      byId("vocabulary-word").setAttribute("aria-expanded", "false");
+      return;
+    }
+    for (const word of matches) {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "word-suggestion-option";
+      option.dataset.vocabularySuggestion = word.id;
+      option.setAttribute("role", "option");
+      const label = document.createElement("strong");
+      label.textContent = word.word;
+      const detail = document.createElement("span");
+      detail.textContent = `${word.partOfSpeech} · ${word.meaning}`;
+      option.append(label, detail);
+      panel.append(option);
+    }
+    panel.hidden = false;
+    byId("vocabulary-word").setAttribute("aria-expanded", "true");
+  }
+
+  function queueDictionaryLookup(value) {
+    window.clearTimeout(dictionaryTimer);
+    dictionaryController?.abort();
+    const word = String(value ?? "").trim();
+    const lookupStatus = byId("dictionary-lookup-status");
+    if (!/^[\p{L}'-]{2,60}$/u.test(word)) {
+      lookupStatus.textContent = "";
+      return;
+    }
+    lookupStatus.textContent = "IPA and example lookup will start when you pause typing…";
+    dictionaryTimer = window.setTimeout(async () => {
+      const controller = new AbortController();
+      dictionaryController = controller;
+      lookupStatus.textContent = "Looking up phonetic transcription and an example…";
+      try {
+        const details = await lookupEnglishWord(word, { signal: controller.signal });
+        if (!mounted || controller.signal.aborted || wordForm.elements.word.value.trim().toLocaleLowerCase("en-US") !== word.toLocaleLowerCase("en-US")) return;
+        let updated = false;
+        const pronunciationField = wordForm.elements.pronunciation;
+        const exampleField = wordForm.elements.example;
+        if (details?.phonetic && !pronunciationEdited && (!pronunciationField.value || pronunciationField.value === autoPronunciation)) {
+          pronunciationField.value = details.phonetic;
+          autoPronunciation = details.phonetic;
+          updated = true;
+        }
+        if (details?.example && !exampleEdited && (!exampleField.value || exampleField.value === autoExample)) {
+          exampleField.value = details.example.toLocaleUpperCase("vi-VN");
+          autoExample = exampleField.value;
+          updated = true;
+        }
+        if (details?.partOfSpeech && !partOfSpeechManuallyChanged && wordForm.elements.partOfSpeech.value !== details.partOfSpeech) {
+          wordForm.elements.partOfSpeech.value = details.partOfSpeech;
+          byId("part-of-speech-suggestion").textContent = `Dictionary suggestion: ${details.partOfSpeech}. You can change it if needed.`;
+          updated = true;
+        }
+        lookupStatus.textContent = details && (details.phonetic || details.example)
+          ? "Dictionary suggestions added. You can edit them before saving."
+          : "No IPA or example was found. You can enter them yourself.";
+        if (updated) scheduleAutosave();
+      } catch (error) {
+        if (error.name !== "AbortError" && mounted) lookupStatus.textContent = "Dictionary lookup is unavailable. You can enter IPA and an example yourself.";
+      }
+    }, 550);
   }
 
   function sortedVisibleWords() {
@@ -153,7 +250,7 @@ export function mountVocabulary(root) {
     const visible = words.filter((word) => {
       if (partOfSpeech && word.partOfSpeech !== partOfSpeech) return false;
       if (!query) return true;
-      return [word.word, word.meaning, word.example, ...(word.tags ?? [])]
+      return [word.word, word.pronunciation, word.meaning, word.example, ...(word.tags ?? [])]
         .some((value) => String(value ?? "").toLocaleLowerCase().includes(query));
     });
     visible.sort((a, b) => {
@@ -185,7 +282,7 @@ export function mountVocabulary(root) {
     if (visible.length === 0) {
       const row = document.createElement("tr");
       const cell = document.createElement("td");
-      cell.colSpan = 5;
+      cell.colSpan = 6;
       cell.className = "table-empty-state";
       cell.textContent = words.length === 0 ? "No vocabulary yet. Add a word to begin." : "No words match this search or filter.";
       row.append(cell);
@@ -307,6 +404,7 @@ export function mountVocabulary(root) {
   }
 
   function startQuiz() {
+    clearQuizTimer();
     const uniqueMeanings = new Set(words.map((word) => word.meaning));
     if (words.length < 2 || uniqueMeanings.size < 2) {
       byId("quiz-empty").textContent = "Add at least two words with different meanings to start a quiz.";
@@ -330,6 +428,49 @@ export function mountVocabulary(root) {
     renderQuizQuestion();
   }
 
+  function clearQuizTimer() {
+    window.clearInterval(quizTimerInterval);
+    quizTimerInterval = null;
+  }
+
+  function updateQuizTimer() {
+    const remaining = Math.max(0, Math.ceil((quizDeadline - Date.now()) / 1000));
+    const timer = byId("quiz-timer");
+    timer.textContent = `00:${String(remaining).padStart(2, "0")}`;
+    timer.dataset.urgent = String(remaining <= 5);
+    if (remaining === 0 && !quizAnswered) {
+      clearQuizTimer();
+      void answerQuiz(null, true);
+    }
+  }
+
+  function playQuizTone(correct) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    try {
+      quizAudioContext ??= new AudioContextClass();
+      if (quizAudioContext.state === "suspended") void quizAudioContext.resume();
+      const now = quizAudioContext.currentTime;
+      const tones = correct ? [660, 880] : [230, 180];
+      tones.forEach((frequency, index) => {
+        const oscillator = quizAudioContext.createOscillator();
+        const gain = quizAudioContext.createGain();
+        const start = now + index * 0.13;
+        oscillator.type = correct ? "sine" : "triangle";
+        oscillator.frequency.setValueAtTime(frequency, start);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.12, start + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.12);
+        oscillator.connect(gain);
+        gain.connect(quizAudioContext.destination);
+        oscillator.start(start);
+        oscillator.stop(start + 0.13);
+      });
+    } catch {
+      // Quiz feedback remains usable if audio is blocked by the browser.
+    }
+  }
+
   function renderQuizQuestion() {
     const current = quizQuestions[quizPosition];
     if (!current) return;
@@ -351,21 +492,29 @@ export function mountVocabulary(root) {
     byId("quiz-feedback").textContent = "";
     byId("quiz-next").disabled = true;
     byId("quiz-next").textContent = quizPosition === quizQuestions.length - 1 ? "Finish quiz" : "Next question";
+    quizDeadline = Date.now() + 15000;
+    updateQuizTimer();
+    clearQuizTimer();
+    quizTimerInterval = window.setInterval(updateQuizTimer, 200);
   }
 
-  async function answerQuiz(choiceId) {
+  async function answerQuiz(choiceId, timedOut = false) {
     if (quizAnswered || quizFinished) return;
     quizAnswered = true;
+    clearQuizTimer();
     const current = quizQuestions[quizPosition];
-    const correct = choiceId === current.id;
+    const correct = !timedOut && choiceId === current.id;
     if (correct) quizScore += 1;
+    playQuizTone(correct);
     for (const button of byId("quiz-choices").querySelectorAll("[data-quiz-choice]")) {
       button.disabled = true;
       if (button.dataset.quizChoice === current.id) button.classList.add("quiz-choice--correct");
       else if (button.dataset.quizChoice === choiceId) button.classList.add("quiz-choice--wrong");
     }
     byId("quiz-score").textContent = `${quizScore} / ${quizQuestions.length}`;
-    byId("quiz-feedback").textContent = correct ? "Correct." : `Not quite. The meaning is: ${current.meaning}`;
+    byId("quiz-feedback").textContent = timedOut
+      ? `Time's up. The meaning is: ${current.meaning}`
+      : correct ? "Correct." : `Not quite. The meaning is: ${current.meaning}`;
     byId("quiz-next").disabled = false;
   }
 
@@ -379,6 +528,9 @@ export function mountVocabulary(root) {
       return;
     }
     quizFinished = true;
+    clearQuizTimer();
+    byId("quiz-timer").textContent = "DONE";
+    byId("quiz-timer").dataset.urgent = "false";
     root.querySelector(".quiz-question").hidden = true;
     byId("quiz-choices").hidden = true;
     byId("quiz-start").hidden = false;
@@ -427,7 +579,11 @@ export function mountVocabulary(root) {
     const button = event.target.closest("button");
     if (!button || !root.contains(button)) return;
     if (await flashcardController.handleClick(button)) return;
-    if (button.dataset.vocabularyPanel) void showPanel(button.dataset.vocabularyPanel, { focus: true });
+    if (button.dataset.vocabularySuggestion) {
+      const word = showWord(button.dataset.vocabularySuggestion);
+      if (word) openWordForm(word);
+    }
+    else if (button.dataset.vocabularyPanel) void showPanel(button.dataset.vocabularyPanel, { focus: true });
     else if (button.id === "toggle-vocabulary-filters") {
       const filters = byId("vocabulary-filter-panel");
       filters.hidden = !filters.hidden;
@@ -494,6 +650,13 @@ export function mountVocabulary(root) {
         draftVersion += 1;
         wordForm.reset();
         wordForm.elements.id.value = "";
+        autoPronunciation = "";
+        autoExample = "";
+        pronunciationEdited = false;
+        exampleEdited = false;
+        byId("vocabulary-word-suggestions").hidden = true;
+        byId("vocabulary-word").setAttribute("aria-expanded", "false");
+        byId("dictionary-lookup-status").textContent = "";
         byId("vocabulary-form-title").textContent = "Add a word";
         submitButton.textContent = "Save word";
         partOfSpeechManuallyChanged = false;
@@ -547,6 +710,12 @@ export function mountVocabulary(root) {
         ? `Suggested: ${suggestion}. You can change it if it doesn't fit.`
         : "We'll suggest a part of speech as you type. You can change it at any time.";
     }
+    if (event.target.id === "vocabulary-word") {
+      renderWordSuggestions(event.target.value);
+      queueDictionaryLookup(event.target.value);
+    }
+    if (event.target.id === "vocabulary-pronunciation") pronunciationEdited = true;
+    if (event.target.id === "vocabulary-example") exampleEdited = true;
     if (wordForm.contains(event.target)) scheduleAutosave();
   }, { signal });
   root.addEventListener("change", (event) => {
@@ -573,6 +742,10 @@ export function mountVocabulary(root) {
     mounted = false;
     flashcardController.cleanup();
     window.clearTimeout(autosaveTimer);
+    window.clearTimeout(dictionaryTimer);
+    dictionaryController?.abort();
+    clearQuizTimer();
+    quizAudioContext?.close().catch(() => {});
     draftVersion += 1;
     events.abort();
   };

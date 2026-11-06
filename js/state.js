@@ -18,9 +18,19 @@ function readAnimationPreference() {
   }
 }
 
+function readWordSuggestionsPreference() {
+  try {
+    const saved = localStorage.getItem(APP_CONFIG.wordSuggestionsStorageKey);
+    return saved === null ? true : saved !== "false";
+  } catch {
+    return true;
+  }
+}
+
 export const appState = {
   theme: readThemePreference(),
   animationsEnabled: readAnimationPreference(),
+  wordSuggestionsEnabled: readWordSuggestionsPreference(),
 };
 
 function updateBrowserThemeColor() {
@@ -49,6 +59,16 @@ export function setAnimationPreference(enabled) {
   document.documentElement.dataset.animations = appState.animationsEnabled ? "on" : "off";
   try {
     localStorage.setItem(APP_CONFIG.animationStorageKey, String(appState.animationsEnabled));
+  } catch {
+    // The preference still applies to this page when browser storage is unavailable.
+  }
+  return true;
+}
+
+export function setWordSuggestionsPreference(enabled) {
+  appState.wordSuggestionsEnabled = Boolean(enabled);
+  try {
+    localStorage.setItem(APP_CONFIG.wordSuggestionsStorageKey, String(appState.wordSuggestionsEnabled));
   } catch {
     // The preference still applies to this page when browser storage is unavailable.
   }

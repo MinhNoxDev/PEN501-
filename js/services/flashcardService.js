@@ -64,6 +64,7 @@ export async function createFlashcardSet(name, direction, vocabulary) {
       front,
       back,
       vocabularyWord: word.word,
+      pronunciation: word.pronunciation || "",
       partOfSpeech: word.partOfSpeech,
       meaning: word.meaning,
       example: word.example || "",
@@ -104,7 +105,7 @@ export async function getFlashcardSets() {
 
 export async function getStudyCards(setId, { dueOnly = true } = {}) {
   const cards = await storage.listByIndex("flashcards", "setId", setId);
-  const needsVocabulary = cards.some((card) => !card.vocabularyWord || !card.partOfSpeech || !card.meaning || card.example === undefined);
+  const needsVocabulary = cards.some((card) => !card.vocabularyWord || !card.partOfSpeech || !card.meaning || card.example === undefined || !card.pronunciation);
   const needsSetDirection = cards.some((card) => !card.direction);
   const [vocabulary, sets] = await Promise.all([
     needsVocabulary ? storage.getVocabulary() : Promise.resolve([]),
@@ -126,6 +127,7 @@ export async function getStudyCards(setId, { dueOnly = true } = {}) {
       ...card,
       direction,
       vocabularyWord,
+      pronunciation: card.pronunciation || word?.pronunciation || "",
       partOfSpeech: card.partOfSpeech || word?.partOfSpeech || "",
       meaning: card.meaning || word?.meaning || (direction === "english-to-vietnamese" ? card.back : card.front),
       example: card.example ?? word?.example ?? "",

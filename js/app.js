@@ -1,5 +1,5 @@
 import { APP_CONFIG } from "./config.js";
-import { initializePreferences, setAnimationPreference, setThemePreference, appState } from "./state.js";
+import { initializePreferences, setAnimationPreference, setThemePreference, setWordSuggestionsPreference, appState } from "./state.js";
 import { normalizeInitialRoute, renderRoute } from "./router.js";
 import { loadDashboardSummary } from "./modules/dashboard.js";
 import { mountVocabulary } from "./modules/vocabulary.js";
@@ -228,6 +228,8 @@ async function renderCurrentRoute() {
   if (key === "settings") {
     const animationToggle = document.getElementById("animations-enabled");
     if (animationToggle) animationToggle.checked = appState.animationsEnabled;
+    const suggestionsToggle = document.getElementById("word-suggestions-enabled");
+    if (suggestionsToggle) suggestionsToggle.checked = appState.wordSuggestionsEnabled;
   }
   if (key === "dashboard") pending.push(refreshDashboard());
   if (key === "vocabulary") {
@@ -267,6 +269,7 @@ function initializeApp() {
   });
   document.addEventListener("change", (event) => {
     if (event.target.id === "animations-enabled") setAnimationPreference(event.target.checked);
+    if (event.target.id === "word-suggestions-enabled") setWordSuggestionsPreference(event.target.checked);
   });
 
   document.addEventListener("click", (event) => {
